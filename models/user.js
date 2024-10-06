@@ -48,6 +48,14 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
+    DOB: { 
+      type: DataTypes.DATE, 
+      allowNull: true, 
+    },
+    gender: { 
+      type: DataTypes.ENUM('Male', 'Female'), 
+      allowNull: true, 
+    },
   },
   {
     schema: 'advance',
