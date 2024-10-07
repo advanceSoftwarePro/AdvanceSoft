@@ -82,4 +82,31 @@ exports.validateImageFile = (req, res, next) => {
   next(); 
 };
 
+exports.validateChangePassword = [
+  body('oldPassword')
+      .notEmpty()
+      .withMessage('Old password is required')
+      .isLength({ min: 6 })
+      .withMessage('Old password must be at least 6 characters long'),
+  body('newPassword')
+      .notEmpty()
+      .withMessage('New password is required')
+      .isLength({ min: 6 })
+      .withMessage('New password must be at least 6 characters long')
+      .matches(/\d/)
+      .withMessage('New password must contain at least one number')
+      .matches(/[A-Z]/)
+      .withMessage('New password must contain at least one uppercase letter')
+      .matches(/[a-z]/)
+      .withMessage('New password must contain at least one lowercase letter'),
+  body('confirmPassword')
+      .notEmpty()
+      .withMessage('Confirm password is required')
+      .custom((value, { req }) => {
+          if (value !== req.body.newPassword) {
+              throw new Error('Confirm password does not match with new password');
+          }
+          return true;
+      }),
+];
 

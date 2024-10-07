@@ -8,7 +8,6 @@ const path = require('path');
 const { Op } = require('sequelize');
 
 
-// View profile
 exports.getProfile = async (req, res) => {
   try {
       // Accessing the user ID from the middleware's decoded token
@@ -33,7 +32,6 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-///
 exports.editProfile = async (req, res) => {
   try {
       if (!req.user) {
@@ -73,4 +71,47 @@ exports.editProfile = async (req, res) => {
       }
       res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
+};
+
+exports.changePassword = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(403).json({ message: 'User not authenticated' });
+        }
+
+        const userId = req.user.id;
+        const { oldPassword, newPassword, confirmPassword } = req.body;
+
+       
+        const user = await User.findOne({ where: { UserID: userId } });
+
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        
+        const isPasswordValid = await bcrypt.compare(oldPassword, user.Password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: 'Old password is incorrect' });
+        }
+
+        
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'New password and confirm password do not match' });
+        }
+
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await User.update(
+            { Password: hashedPassword },
+            { where: { UserID: userId } }
+        );
+
+        return res.status(200).json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
 };

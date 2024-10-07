@@ -4,7 +4,7 @@ const path = require('path');
 
 const profileController = require('../controllers/profileController');
 const { verifyUserToken } = require('../utils/authMiddleware');
-const { validateUserProfile, validateImageFile } = require('../utils/validators');
+const { validateUserProfile, validateImageFile , validateChangePassword} = require('../utils/validators');
 
 
 const storage = multer.diskStorage({
@@ -33,5 +33,12 @@ router.put('/profile',
     validateUserProfile, 
     profileController.editProfile 
 );
+
+router.put('/profile/change-password', 
+    verifyUserToken, 
+    validateChangePassword,
+    profileController.changePassword 
+);
+
 
 module.exports = router;
