@@ -5,7 +5,7 @@ const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc
 const { validateRegister } = require('../utils/validators');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-
+///
 
 exports.register = async (req, res) => {
   const { fullName, email, password, role } = req.body;
