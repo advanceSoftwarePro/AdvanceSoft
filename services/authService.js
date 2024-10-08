@@ -54,6 +54,9 @@ exports.sendVerificationEmail = async (email, token) => {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    tls: {
+      rejectUnauthorized: false, // Allow self-signed certificates
+    },
   });
 
   const url = `http://localhost:3000/auth/verify/${token}`; // Verification link
