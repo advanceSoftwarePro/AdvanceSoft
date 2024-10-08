@@ -5,43 +5,41 @@ const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc
 const { validateRegister } = require('../utils/validators');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-
+const nodemailer = require('nodemailer');
 
 exports.register = async (req, res) => {
   const { fullName, email, password, role } = req.body;
 
-  // Validate input data
+ 
   const { error } = validateRegister(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   try {
-    // Check if the email already exists
+   
     const existingUser = await User.findOne({ where: { Email: email } });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // Hash the password
     const hashedPassword = await authService.hashPassword(password);
 
-    // Prepare the user data
     const userData = {
       FullName: fullName,
       Email: email,
       Password: hashedPassword,
       Role: role,
-      VerificationStatus: 'Unverified', // Email verification is needed
+      VerificationStatus: 'Unverified', 
     };
 
-    // Generate a verification token for email verification
+   
     const verificationToken = authService.generateVerificationToken(email);
 
-    // Send the verification email to the user
-    await authService.sendVerificationEmail(email, verificationToken); // Ensure this function is called
+   
+    await authService.sendVerificationEmail(email, verificationToken);
 
     return res.status(200).json({
       message: 'Registration successful. Please verify your email.',
-      verificationToken: verificationToken, // Optional, if you want to send it back to the user
+      verificationToken: verificationToken, 
     });
 
   } catch (err) {
@@ -181,8 +179,6 @@ exports.confirmOwnerPayment = async (req, res) => {
 };
 
 
-
-
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -221,3 +217,54 @@ exports.login = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { Email: email } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Email not found' });
+    }
+
+  
+    const resetToken = authService.generateResetToken(email);
+
+    
+    await authService.sendResetPasswordEmail(email, resetToken);
+
+    return res.status(200).json({ message: 'Password reset email sent. Check your inbox.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    
+    const email = await authService.verifyToken(token);
+
+    const user = await User.findOne({ where: { Email: email } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Invalid token or user not found' });
+    }
+
+    
+    const hashedPassword = await authService.hashPassword(newPassword);
+
+    
+    user.Password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({ message: 'Password reset successfully' });
+  } catch (error) {
+    return res.status(400).json({ message: 'Invalid or expired token', error: error.message });
+  }
+};
+
