@@ -5,6 +5,7 @@ const profileRoutes = require('./routes/profileRoutes');  // Import profile rout
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');  // Import item routes
+const itemSearchRouter = require('./routes/itemSearchRouter'); 
 
 const fs = require('fs');
 require('dotenv').config();
@@ -23,10 +24,15 @@ app.use(express.json());
 //console.log('Files in Current Directory:', fs.readdirSync(__dirname)); // Log current directory contents
 
 // Routes
-app.use('/api', authRoutes);
+/*app.use('/api', authRoutes);
 app.use('/api', categoryRoutes);
 
-app.use('/api', profileRoutes);
+app.use('/api', profileRoutes);*/
+
+app.use((req, res, next) => {
+  console.log(`Received request: ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 // Sync with the database
 sequelize.sync()
@@ -37,6 +43,16 @@ app.use('/api', categoryRoutes);  // Category routes
 app.use('/api', profileRoutes);  // Profile-related routes
 app.use('/api', deliveryRoutes);  // Delivery routes
 app.use('/api/items', itemRoutes);  // Item routes
+app.use('/api/items', itemSearchRouter);
+
+
+
+console.log('Registered routes:');
+app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+        console.log(middleware.route);
+    }
+});
 
 
 sequelize.sync({ alter: true })

@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Rental = require('./Rentals');  // Import the Rental model
 
 const Item = sequelize.define(
   'Item',
@@ -14,7 +13,7 @@ const Item = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: { tableName: 'Users', schema: 'advance' },  // Reference to Users table
+        model: { tableName: 'Users', schema: 'advance' },
         key: 'UserID',
       },
       onDelete: 'CASCADE',
@@ -31,12 +30,12 @@ const Item = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: { tableName: 'Categories', schema: 'advance' },  // Reference to Categories table
+        model: { tableName: 'Categories', schema: 'advance' },
         key: 'CategoryID',
       },
     },
     Condition: {
-      type: DataTypes.ENUM('New', 'Used', 'Refurbished'),  // Correct way to define ENUM
+      type: DataTypes.ENUM('New', 'Used', 'Refurbished'),
       allowNull: false,
     },
     DailyPrice: {
@@ -71,15 +70,13 @@ const Item = sequelize.define(
   {
     tableName: 'Items',
     schema: 'advance',
-    timestamps: false,  // Disable Sequelize's automatic timestamps
+    timestamps: false,
   }
 );
 
-// Hook to automatically update the `UpdatedAt` field
 Item.addHook('beforeUpdate', (item) => {
   item.UpdatedAt = new Date();
 });
-Item.hasMany(Rental, { foreignKey: 'ItemID' });
-Rental.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
 
+// Export the Item model first
 module.exports = Item;
