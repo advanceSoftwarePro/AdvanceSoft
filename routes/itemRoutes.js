@@ -8,5 +8,7 @@ router.post('/', verifyUserToken, itemController.createItem);  // Create an item
 router.get('/',verifyUserToken, itemController.getAllItems);  // Get all items (public)
 router.put('/:id', verifyUserToken, itemController.updateItem);  // Update an item (protected)
 router.delete('/:id', verifyUserToken, itemController.deleteItem);  // Delete an item (protected)
+router.get('/filter', verifyUserToken, itemController.getFilteredItems); // New endpoint for customers
+router.get('/details/:itemId', verifyUserToken, itemController.getItemDetails);
 
 module.exports = router;

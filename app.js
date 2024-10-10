@@ -1,8 +1,6 @@
 const express = require('express');
 const sequelize = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
-const sequelize = require('./config/database');  // Import sequelize instance
-const authRoutes = require('./routes/authRoutes');  // Import authentication routes
 const profileRoutes = require('./routes/profileRoutes');  // Import profile routes
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
@@ -13,7 +11,7 @@ require('dotenv').config();
 
 
 
-const profileRoutes = require('./routes/profileRoutes');
+
 // Initialize express app
 const app = express();
 
