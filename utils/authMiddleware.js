@@ -21,6 +21,7 @@ const jwt = require('jsonwebtoken');
 
         // Token is valid, attach the decoded info (like userId and any other relevant info) to request object
         req.user = { id: decoded.userId, role: decoded.role }; // Store user info in req.user
+        console.log(req.user);
         next(); // Call next middleware or route handler
     });
 };

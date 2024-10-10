@@ -1,67 +1,71 @@
-// models/User.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const Rental = require('./Rentals');  // Import the Rental model
+
 
 const User = sequelize.define(
   'User',
   {
-    UserID: {
+    "UserID": {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    FullName: {
+    "FullName": {
       type: DataTypes.STRING(100),
       allowNull: false,
     },
-    Email: {
+    "Email": {
       type: DataTypes.STRING(100),
       allowNull: false,
       unique: true,
     },
-    Password: {
+    "Password": {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    PhoneNumber: {
+    "PhoneNumber": {
       type: DataTypes.STRING(15),
     },
-    Address: {
+    "Address": {
       type: DataTypes.TEXT,
     },
-    ProfilePicture: {
+    "ProfilePicture": {
       type: DataTypes.STRING(255),
     },
-    Rating: {
+    "Rating": {
       type: DataTypes.DECIMAL(3, 2),
       defaultValue: 0.0,
     },
-    Role: {
+    "Role": {
       type: DataTypes.ENUM('Renter', 'Owner', 'Both'),
       defaultValue: 'Both',
     },
-    VerificationStatus: {
+    "VerificationStatus": {
       type: DataTypes.ENUM('Verified', 'Unverified'),
       defaultValue: 'Unverified',
     },
-    CreatedAt: {
+    "CreatedAt": {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    DOB: { 
-      type: DataTypes.DATE, 
-      allowNull: true, 
+    "DOB": {  // New column for Date of Birth
+      type: DataTypes.DATE,
+      allowNull: true,
     },
-    gender: { 
-      type: DataTypes.ENUM('Male', 'Female'), 
-      allowNull: true, 
+    "Gender": {  // New column for Gender using the enum type
+      type: DataTypes.ENUM('Male', 'Female'),
+      allowNull: true,
     },
   },
   {
     schema: 'advance',
-    timestamps: false,
+    tableName: '"Users"',
+    timestamps: false,  // Disable auto-generated timestamps
   }
 );
+// In models/User.js
+User.hasMany(Rental, { foreignKey: 'RenterID' });
+Rental.belongsTo(User, { foreignKey: 'RenterID', as: 'Renter' });
 
 module.exports = User;
-///
