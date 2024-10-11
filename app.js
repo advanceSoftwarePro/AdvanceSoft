@@ -43,7 +43,7 @@ app.use('/api', categoryRoutes);  // Category routes
 app.use('/api', profileRoutes);  // Profile-related routes
 app.use('/api', deliveryRoutes);  // Delivery routes
 app.use('/api/items', itemRoutes);  // Item routes
-app.use('/api/items', itemSearchRouter);
+
 
 
 
