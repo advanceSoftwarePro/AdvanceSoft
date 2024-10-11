@@ -1,52 +1,44 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Delivery = sequelize.define(
-  'Delivery',
-  {
-    DeliveryID: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    RentalID: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: { tableName: 'Rentals', schema: 'advance' },  // Reference Rentals table
-        key: 'RentalID',
-      },
-    },
-    DeliveryStatus: {
-      type: DataTypes.ENUM('Pending', 'InProgress', 'Completed', 'Failed'),
-      defaultValue: 'Pending',
-    },
-    PickupLocation: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    DeliveryLocation: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    DeliveryDate: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
-    CurrentLatitude: {  // Current latitude of the delivery vehicle
-      type: DataTypes.FLOAT,
-      allowNull: true,
-    },
-    CurrentLongitude: {  // Current longitude of the delivery vehicle
-      type: DataTypes.FLOAT,
-      allowNull: true,
-    },
+const Delivery = sequelize.define('Delivery', {
+  DeliveryID: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
   },
-  {
-    schema: 'advance',
-    tableName: 'Deliveries',
-    timestamps: false,  // Disable automatic timestamps
-  }
-);
+  RentalID: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  PickupLocation: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  DeliveryLocation: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  DeliveryDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+  DeliveryStatus: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  CurrentLatitude: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  CurrentLongitude: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+}, {
+  timestamps: false,
+  schema: 'advance',
+  tableName: 'Deliveries',
+});
 
 module.exports = Delivery;

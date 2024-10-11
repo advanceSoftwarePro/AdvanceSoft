@@ -2,6 +2,7 @@ const Item = require('../models/items');
 const authService = require('../services/authService');
 const { Op } = require('sequelize');
 const path = require('path');
+
 exports.createItem = async (req, res) => {
     // Check if the user is a Renter
     if (req.user.role === 'Renter') {
