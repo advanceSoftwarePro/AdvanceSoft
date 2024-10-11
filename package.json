@@ -27,6 +27,7 @@
     "pg-hstore": "^2.3.4",
     "redis": "^4.7.0",
     "sequelize": "^6.37.3",
+    "socket.io": "^4.8.0",
     "stripe": "^17.1.0"
   },
   "devDependencies": {

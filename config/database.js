@@ -1,23 +1,28 @@
-// config/database.js
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+require('dotenv').config();  // Load environment variables from .env
 
+// Initialize Sequelize with environment variables
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
+  process.env.DB_NAME,      // Database name
+  process.env.DB_USER,      // Database user
+  process.env.DB_PASSWORD,  // Database password
   {
-    host: process.env.DB_HOST,
-    dialect: 'postgres',
-    schema: 'advance',
-    logging: false,
+    host: process.env.DB_HOST,  // Database host
+    dialect: 'postgres',        // Database dialect (PostgreSQL)
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,  // Enable logging only in development
   }
 );
 
-sequelize
-  .authenticate()
-  .then(() => console.log('Database connected...'))
-  .catch((err) => console.error('Unable to connect to database:', err));
+// Test the connection to the database
+async function testConnection() {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connected...');
+  } catch (err) {
+    console.error('Unable to connect to database:', err);
+  }
+}
+
+testConnection();  // Call the testConnection function to verify database connection
 
 module.exports = sequelize;
-

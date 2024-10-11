@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Driver Location Update</title>
+</head>
+<body>
+
+  <h1>Driver Location Tracking</h1>
+
+  <p>Your location will be updated every 10 seconds.</p>
+
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    // Automatically get the location every 10 seconds
+    function updateLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            // Send location update to your backend via REST API
+            fetch('http://localhost:3000/api/deliveries/1/location', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoicmFnaGFkc2FsaGFiMTNAZ21haWwuY29tIiwicm9sZSI6IlJlbnRlciIsImlhdCI6MTcyODY0NjA4NSwiZXhwIjoxNzI4NjQ5Njg1fQ.7E2QjFzpKpHZPrjhgjWdYtl32zSNtI8i-K6UFeygzQ0' // Include your auth token
+              },
+              body: JSON.stringify({
+                latitude: latitude,
+                longitude: longitude
+              })
+            })
+              .then(response => response.json())
+              .then(data => console.log('Location updated:', data))
+              .catch(error => console.error('Error updating location:', error));
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+          }
+        );
+      } else {
+        console.error('Geolocation is not supported by this browser.');
+      }
+    }
+
+    // Call updateLocation every 10 seconds
+    setInterval(updateLocation, 10000);
+  </script>
+
+</body>
+</html>

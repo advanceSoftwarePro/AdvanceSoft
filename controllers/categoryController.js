@@ -7,7 +7,7 @@ exports.listParentCategories = async (req, res) => {
    
     const parentCategories = await Category.findAll({
       where: {
-        parentcategoryid: null}
+        ParentCategoryID: null}
     });
 
     if (parentCategories.length === 0) {
@@ -26,12 +26,12 @@ exports.getSubcategories = async (req, res) => {
     const { parentId } = req.params;
     
     const subcategories = await Category.findAll({
-      where: { parentcategoryid: parentId }
+      where: { ParentCategoryID: parentId }
     });
 
     if (subcategories.length === 0) {
       const [results, metadata] = await sequelize.query(
-        `SELECT * FROM advance.Items WHERE CategoryID = ${parentId};`
+        `SELECT * FROM "advance"."Items" WHERE "CategoryID" = ${parentId};`
       );
      
     if (results.length === 0) {
