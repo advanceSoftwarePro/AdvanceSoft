@@ -1,9 +1,9 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Item = require('./Items'); // Import the Item model
+const Item = require('./items');
 
-const Rental = sequelize.define(
-  'Rental',
+const Rentals = sequelize.define(
+  'Rentals',
   {
     RentalID: {
       type: DataTypes.INTEGER,
@@ -14,32 +14,43 @@ const Rental = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: Item, // Reference to the Item model
+        model: { tableName: 'Items', schema: 'advance' },
         key: 'ItemID',
       },
-      onDelete: 'CASCADE',
     },
-    UserID: {
+    RenterID: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: { tableName: 'Users', schema: 'advance' },
+        key: 'UserID',
+      },
     },
-    RentalStartDate: {
+    StartDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    RentalEndDate: {
+    EndDate: {
       type: DataTypes.DATE,
       allowNull: false,
+    },
+    TotalPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    Status: {
+      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Completed'),
+      defaultValue: 'Pending',
     },
   },
   {
-    tableName: 'Rentals',
     schema: 'advance',
+    tableName: 'Rentals',
     timestamps: false,
   }
 );
 
-// Define associations after defining models
-Rental.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
+// Define the relationship here
+Rentals.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
 
-module.exports = Rental; // Make sure to export the model correctly
+module.exports = Rentals;

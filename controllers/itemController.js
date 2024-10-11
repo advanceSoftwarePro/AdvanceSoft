@@ -1,4 +1,4 @@
-//const Item = require('../models/items');
+const Item = require('../models/items');
 const authService = require('../services/authService');
 const { Op } = require('sequelize');
 const path = require('path');

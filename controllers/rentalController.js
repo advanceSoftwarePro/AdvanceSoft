@@ -1,14 +1,16 @@
-
-
-// Create a rental (Only Renters can do this)
+const Item = require('../models/items');
 const Rental = require('../models/Rentals');
-//const Item = require('../models/item');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/emailService'); // Import email service
 
 // Create a rental (Only Renters can do this)
 exports.createRental = async (req, res) => {
   const { ItemID, StartDate, EndDate } = req.body;
+
+  // Validate required fields
+  if (!ItemID || !StartDate || !EndDate) {
+    return res.status(400).json({ message: 'Please provide ItemID, StartDate, and EndDate' });
+  }
 
   // Only Renters can create rentals
   if (req.user.role !== 'Renter') {
@@ -18,6 +20,7 @@ exports.createRental = async (req, res) => {
   try {
     // Find the item to rent
     const item = await Item.findOne({ where: { ItemID } });
+    console.log('Item found:', item);
 
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
@@ -25,10 +28,15 @@ exports.createRental = async (req, res) => {
 
     // Find the owner of the item
     const owner = await User.findOne({ where: { UserID: item.UserID } });
+    console.log('Owner found:', owner);
+
+    if (!owner) {
+      return res.status(404).json({ message: 'Owner not found' });
+    }
 
     // Calculate the number of rental days
     const rentalDays = Math.ceil((new Date(EndDate) - new Date(StartDate)) / (1000 * 60 * 60 * 24));
-    
+
     // Calculate total price
     const totalPrice = rentalDays * item.DailyPrice;
 
@@ -70,15 +78,21 @@ Rental Platform Team`;
                   <p>Best regards,</p>
                   <p>Rental Platform Team</p>`;
 
+    // Log email details
+    console.log(`Sending email to: ${owner.Email}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Text: ${text}`);
+    console.log(`HTML: ${html}`);
+
     // Send the email
     await sendEmail(owner.Email, subject, text, html);
 
     return res.status(201).json({ message: 'Rental created successfully, owner has been notified', rental });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error });
+    console.error('Error creating rental:', error); // Log the actual error
+    return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
-
 
 // Update rental status (Owner/Admin action)
 exports.updateRentalStatus = async (req, res) => {
@@ -101,9 +115,11 @@ exports.updateRentalStatus = async (req, res) => {
 
     return res.status(200).json({ message: 'Rental status updated successfully', rental });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error });
+    console.error('Error updating rental status:', error); // Log the actual error
+    return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
+
 // Get all rentals for the current user (filtered by status)
 exports.getAllRentals = async (req, res) => {
   const { status } = req.query; // Get status from query parameter
@@ -135,7 +151,7 @@ exports.getAllRentals = async (req, res) => {
 
     return res.status(200).json({ rentals });
   } catch (error) {
-    return res.status(500).json({ message: 'Server error', error });
+    console.error('Error fetching rentals:', error); // Log the actual error
+    return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
-
