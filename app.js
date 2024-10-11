@@ -5,9 +5,11 @@ const profileRoutes = require('./routes/profileRoutes');  // Import profile rout
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');  // Import item routes
-
+const rentalRoutes= require('./routes/rentalRoutes');  // Import item routes 
 const fs = require('fs');
 require('dotenv').config();
+const http = require('http');
+const { Server } = require('socket.io');
 
 
 
@@ -18,9 +20,21 @@ const app = express();
 // Middleware to parse JSON
 app.use(express.json());
 
+
+
+// Create HTTP server and Socket.IO instance
+const server = http.createServer(app);
+const io = new Server(server);  // Initialize socket.io
+
 // Log current directory and its files for debugging
 //console.log('Current Directory:', __dirname);
 //console.log('Files in Current Directory:', fs.readdirSync(__dirname)); // Log current directory contents
+
+const path = require('path');
+
+// Serve the public directory with HTML files
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Routes
 app.use('/api', authRoutes);
@@ -37,7 +51,20 @@ app.use('/api', categoryRoutes);  // Category routes
 app.use('/api', profileRoutes);  // Profile-related routes
 app.use('/api', deliveryRoutes);  // Delivery routes
 app.use('/api/items', itemRoutes);  // Item routes
+app.use('/api/Rentals', rentalRoutes);  // Item routes
+app.use('/api/deliveries', deliveryRoutes);  // Item routes
 
+// WebSocket connections
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io accessible to deliveryController
+app.set('socketio', io);
 
 sequelize.sync({ alter: true })
   .then(() => {

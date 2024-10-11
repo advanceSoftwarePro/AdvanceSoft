@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const Rental = require('./Rentals');  // Import the Rental model
+const sequelize = require('../config/database');  // Import sequelize instance
 
 const Item = sequelize.define(
   'Item',
@@ -36,7 +35,7 @@ const Item = sequelize.define(
       },
     },
     Condition: {
-      type: DataTypes.ENUM('New', 'Used', 'Refurbished'),  // Correct way to define ENUM
+      type: DataTypes.ENUM('New', 'Used', 'Refurbished'),
       allowNull: false,
     },
     DailyPrice: {
@@ -45,7 +44,7 @@ const Item = sequelize.define(
     },
     SecurityDeposit: {
       type: DataTypes.DECIMAL(10, 2),
-      defaultValue: 0.0,
+      defaultValue: 0.00,
     },
     AvailabilityStatus: {
       type: DataTypes.ENUM('Available', 'Unavailable'),
@@ -74,12 +73,5 @@ const Item = sequelize.define(
     timestamps: false,  // Disable Sequelize's automatic timestamps
   }
 );
-
-// Hook to automatically update the `UpdatedAt` field
-Item.addHook('beforeUpdate', (item) => {
-  item.UpdatedAt = new Date();
-});
-Item.hasMany(Rental, { foreignKey: 'ItemID' });
-Rental.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
 
 module.exports = Item;

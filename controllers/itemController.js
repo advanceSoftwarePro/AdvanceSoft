@@ -1,4 +1,4 @@
-const Item = require('../models/items');
+//const Item = require('../models/items');
 const authService = require('../services/authService');
 const path = require('path');
 exports.createItem = async (req, res) => {
