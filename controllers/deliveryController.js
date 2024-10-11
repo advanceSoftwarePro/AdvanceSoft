@@ -101,6 +101,5 @@ module.exports = {
   createDelivery,
   getDelivery,
   getDeliveryLocationForCustomer,
-  updateDeliveryLocation,
   deleteDelivery,
 };
