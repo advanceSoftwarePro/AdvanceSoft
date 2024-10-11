@@ -6,6 +6,7 @@ const { validateRegister } = require('../utils/validators');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const TokenBlacklist = require('../models/tokenBlacklist');
 
 exports.register = async (req, res) => {
   const { fullName, email, password, role } = req.body;
@@ -148,7 +149,7 @@ exports.verifyOwnerEmail = async (req, res) => {
 
 exports.confirmOwnerPayment = async (req, res) => {
   const { paymentIntentId, email, fullName, password } = req.body;
-
+console.log(paymentIntentId);
   try {
     // Confirm the payment intent with Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -266,5 +267,41 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     return res.status(400).json({ message: 'Invalid or expired token', error: error.message });
   }
+};
+ 
+
+exports.logout = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const token = authHeader.split(' ')[1]; 
+
+
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const userId = decoded.userId; 
+
+    
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1); 
+
+      await TokenBlacklist.create({
+        token,
+        userId,
+        expiresAt,
+      });
+
+      return res.status(200).json({ message: 'Logged out successfully' });
+    } catch (error) {
+      console.error('Error blacklisting token:', error);
+      return res.status(500).json({ message: 'Error logging out' });
+    }
+  });
 };
 
