@@ -13,7 +13,7 @@ const Item = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: { tableName: 'Users', schema: 'advance' },  // Reference to Users table
+        model: { tableName: 'Users', schema: 'advance' },
         key: 'UserID',
       },
       onDelete: 'CASCADE',
@@ -30,7 +30,7 @@ const Item = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: { tableName: 'Categories', schema: 'advance' },  // Reference to Categories table
+        model: { tableName: 'Categories', schema: 'advance' },
         key: 'CategoryID',
       },
     },
@@ -70,8 +70,13 @@ const Item = sequelize.define(
   {
     tableName: 'Items',
     schema: 'advance',
-    timestamps: false,  // Disable Sequelize's automatic timestamps
+    timestamps: false,
   }
 );
 
+Item.addHook('beforeUpdate', (item) => {
+  item.UpdatedAt = new Date();
+});
+
+// Export the Item model first
 module.exports = Item;

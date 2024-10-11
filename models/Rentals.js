@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // Import sequelize instance
+const sequelize = require('../config/database');
+const Item = require('./Items'); // Import the Item model
 
 const Rental = sequelize.define(
   'Rental',
@@ -13,40 +14,32 @@ const Rental = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: { tableName: 'Items', schema: 'advance' },  // Reference to Items table
+        model: Item, // Reference to the Item model
         key: 'ItemID',
       },
+      onDelete: 'CASCADE',
     },
-    RenterID: {
+    UserID: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: { tableName: 'Users', schema: 'advance' },  // Reference to Users table
-        key: 'UserID',
-      },
     },
-    StartDate: {
+    RentalStartDate: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-    EndDate: {
+    RentalEndDate: {
       type: DataTypes.DATE,
       allowNull: false,
-    },
-    TotalPrice: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-    },
-    Status: {
-      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Completed'),
-      defaultValue: 'Pending',
     },
   },
   {
-    schema: 'advance',
     tableName: 'Rentals',
+    schema: 'advance',
     timestamps: false,
   }
 );
 
-module.exports = Rental;
+// Define associations after defining models
+Rental.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
+
+module.exports = Rental; // Make sure to export the model correctly

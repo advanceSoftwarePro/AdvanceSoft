@@ -11,4 +11,5 @@ router.delete('/:id', verifyUserToken, itemController.deleteItem);  // Delete an
 router.get('/filter', verifyUserToken, itemController.getFilteredItems); // New endpoint for customers
 router.get('/details/:itemId', verifyUserToken, itemController.getItemDetails);
 
+router.get('/search', verifyUserToken,itemController.searchItems); 
 module.exports = router;

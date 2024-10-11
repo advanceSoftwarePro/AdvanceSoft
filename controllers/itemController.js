@@ -1,5 +1,6 @@
 //const Item = require('../models/items');
 const authService = require('../services/authService');
+const { Op } = require('sequelize');
 const path = require('path');
 exports.createItem = async (req, res) => {
     // Check if the user is a Renter
@@ -167,5 +168,33 @@ exports.getItemDetails = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+exports.searchItems = async (req, res) => {
+  const { Name } = req.query;  // Extract the query parameter from the request
+
+  if (!Name) {
+      return res.status(400).json({ message: 'Query parameter is required.' });
+  }
+
+  try {
+      const items = await Item.findAll({
+          where: {
+              Title: {
+                  [Op.iLike]: `%${Name}%`,  // Use iLIKE for case-insensitive matching
+              },
+          },
+          attributes: ['Title', 'Description', 'DailyPrice', 'Condition', 'AvailabilityStatus'],  // Customize the attributes you want to return
+      });
+
+      if (items.length === 0) {
+          return res.status(404).json({ message: 'No items found' });
+      }
+
+      return res.status(200).json({ items });
+  } catch (error) {
+      console.error('Error while searching items:', error);
+      return res.status(500).json({ message: 'Server error', error });
   }
 };

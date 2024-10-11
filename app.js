@@ -6,6 +6,8 @@ const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');  // Import item routes
 const rentalRoutes= require('./routes/rentalRoutes');  // Import item routes 
+const itemSearchRouter = require('./routes/itemSearchRouter'); 
+
 const fs = require('fs');
 require('dotenv').config();
 const http = require('http');
@@ -37,10 +39,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Routes
-app.use('/api', authRoutes);
+/*app.use('/api', authRoutes);
 app.use('/api', categoryRoutes);
 
-app.use('/api', profileRoutes);
+app.use('/api', profileRoutes);*/
+
+app.use((req, res, next) => {
+  console.log(`Received request: ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 // Sync with the database
 sequelize.sync()
@@ -65,6 +72,16 @@ io.on('connection', (socket) => {
 
 // Make io accessible to deliveryController
 app.set('socketio', io);
+
+
+
+console.log('Registered routes:');
+app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+        console.log(middleware.route);
+    }
+});
+
 
 sequelize.sync({ alter: true })
   .then(() => {
