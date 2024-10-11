@@ -26,16 +26,13 @@ exports.verifyUserToken = async (req, res, next) => {
         return res.status(401).json({ message: 'Unauthorized or invalid token' });
       }
 
-        // Token is valid, attach the decoded info (like userId and any other relevant info) to request object
-        req.user = { id: decoded.userId, role: decoded.role }; // Store user info in req.user
-        next(); // Call next middleware or route handler
+      // Token is valid, attach the decoded info (like userId and any other relevant info) to request object
+      req.user = { id: decoded.userId, role: decoded.role }; // Store user info in req.user
+      next(); // Call next middleware or route handler
     });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
   
-
-
-
-
-  
-
