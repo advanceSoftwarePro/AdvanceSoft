@@ -36,7 +36,7 @@ app.use('/api/rentals', rentalRoutes);
 app.use('/api', ratingRoutes);
 
 // Sync with the database
-sequelize.sync({force:true})
+sequelize.sync()
   .then(() => {
     console.log('Database synchronized successfully');
     
