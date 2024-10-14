@@ -6,8 +6,10 @@ const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
+const ratingRoutes = require('./routes/ratingRoutes'); 
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 const cron = require('node-cron'); // Single import
+
 
 const fs = require('fs');
 require('dotenv').config();
@@ -31,9 +33,10 @@ app.use('/api', profileRoutes);
 app.use('/api', deliveryRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
+app.use('/api', ratingRoutes);
 
 // Sync with the database
-sequelize.sync()
+sequelize.sync({force:true})
   .then(() => {
     console.log('Database synchronized successfully');
     
