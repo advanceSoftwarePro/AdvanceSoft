@@ -7,6 +7,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
 const ratingRoutes = require('./routes/ratingRoutes'); 
+const messageRouter = require('./routes/messageRoute'); 
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 const cron = require('node-cron'); // Single import
 
@@ -34,6 +35,7 @@ app.use('/api', deliveryRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api', ratingRoutes);
+app.use('/api/messages', messageRouter);
 
 // Sync with the database
 sequelize.sync()
