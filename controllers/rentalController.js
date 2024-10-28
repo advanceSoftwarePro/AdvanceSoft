@@ -1,15 +1,29 @@
 const Item = require('../models/items');
 const Rental = require('../models/Rentals');
+const Delivery = require('../models/Delivery');
+const DeliveryDriver =require('../models/DeliveryDrivers');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/emailService'); // Import email service
+const Distance =require('../services/getDeliveryFeeByArea');
 
-// Create a rental (Only Renters can do this)
+
 exports.createRental = async (req, res) => {
-  const { ItemID, StartDate, EndDate } = req.body;
+  const { ItemID, StartDate, EndDate, DeliveryOption, DeliveryAddress } = req.body;
 
   // Validate required fields
   if (!ItemID || !StartDate || !EndDate) {
     return res.status(400).json({ message: 'Please provide ItemID, StartDate, and EndDate' });
+  }
+
+  // Check if dates are valid and EndDate is after StartDate
+  const startDateObj = new Date(StartDate);
+  const endDateObj = new Date(EndDate);
+  if (isNaN(startDateObj) || isNaN(endDateObj) || startDateObj >= endDateObj) {
+    return res.status(400).json({ message: 'Please provide valid StartDate and EndDate, with EndDate after StartDate' });
+  }
+
+  if (!DeliveryOption || !['Pickup', 'Delivery'].includes(DeliveryOption)) {
+    return res.status(400).json({ message: 'Please specify a valid DeliveryOption: Pickup or Delivery' });
   }
 
   // Only Renters can create rentals
@@ -18,27 +32,42 @@ exports.createRental = async (req, res) => {
   }
 
   try {
-    // Find the item to rent
     const item = await Item.findOne({ where: { ItemID } });
-    console.log('Item found:', item);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
 
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found' });
-    }
-
-    // Find the owner of the item
     const owner = await User.findOne({ where: { UserID: item.UserID } });
-    console.log('Owner found:', owner);
-
-    if (!owner) {
-      return res.status(404).json({ message: 'Owner not found' });
-    }
+    if (!owner) return res.status(404).json({ message: 'Owner not found' });
 
     // Calculate the number of rental days
-    const rentalDays = Math.ceil((new Date(EndDate) - new Date(StartDate)) / (1000 * 60 * 60 * 24));
+    const rentalDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+    const rentalPrice = rentalDays * item.DailyPrice;
+
+    // Calculate delivery fee if DeliveryOption is 'Delivery'
+    let deliveryFee = 0;
+    if (DeliveryOption === 'Delivery') {
+      const pickupLocation = owner.Address;  // Owner's address (string)
+      const deliveryLocation = DeliveryAddress; // Renter's delivery address (string)
+
+      // Geocode pickup and delivery addresses to get coordinates
+      const pickupCoordinates = await Distance.geocodeAddress(pickupLocation);
+      const deliveryCoordinates = await Distance.geocodeAddress(deliveryLocation);
+
+      if (!pickupCoordinates || !deliveryCoordinates) {
+        return res.status(400).json({ message: 'Could not geocode pickup or delivery address' });
+      }
+
+      // Call the HERE Routing API to get the route information
+      const route = await Distance.getRoute(pickupCoordinates, deliveryCoordinates);
+      if (!route || route.error) return res.status(400).json({ message: 'Delivery not available for this area' });
+
+      // Use the distance from the route response to calculate the delivery fee
+      const distanceInKilometers = route.length / 1000; // Assuming route.length is in meters
+      console.log(distanceInKilometers);
+      deliveryFee = Math.ceil(distanceInKilometers); // Charge $1 per kilometer
+    }
 
     // Calculate total price
-    const totalPrice = rentalDays * item.DailyPrice;
+    const totalPrice = rentalPrice + deliveryFee;
 
     // Create the rental
     const rental = await Rental.create({
@@ -47,24 +76,15 @@ exports.createRental = async (req, res) => {
       StartDate,
       EndDate,
       TotalPrice: totalPrice,
+      DeliveryOption,
+      DeliveryAddress: DeliveryOption === 'Delivery' ? DeliveryAddress : null,
       Status: 'Pending',  // Default to Pending
     });
+    console.log(DeliveryOption);
 
     // Send an email notification to the item owner
     const subject = `New Rental Request for Your Item: ${item.Title}`;
-    const text = `Hello ${owner.FullName},
-
-You have received a new rental request for your item "${item.Title}".
-Here are the details:
-
-- Renter: ${req.user.fullName} (Email: ${req.user.email})
-- Rental Period: From ${StartDate} to ${EndDate}
-- Total Price: $${totalPrice}
-
-Please review and approve or reject this request in the system.
-
-Best regards,
-Rental Platform Team`;
+    const text = `Hello ${owner.FullName},\n\nYou have received a new rental request for your item "${item.Title}". Here are the details:\n\n- Renter: ${req.user.fullName} (Email: ${req.user.email})\n- Rental Period: From ${StartDate} to ${EndDate}\n- Total Price: $${totalPrice}\n- Delivery Option: ${DeliveryOption}\n- Delivery Address: ${DeliveryAddress || 'N/A'}\n\nPlease review and approve or reject this request in the system.\n\nBest regards,\nRental Platform Team`;
 
     const html = `<p>Hello ${owner.FullName},</p>
                   <p>You have received a new rental request for your item <strong>${item.Title}</strong>.</p>
@@ -73,28 +93,23 @@ Rental Platform Team`;
                     <li><strong>Renter:</strong> ${req.user.fullName} (Email: ${req.user.email})</li>
                     <li><strong>Rental Period:</strong> From ${StartDate} to ${EndDate}</li>
                     <li><strong>Total Price:</strong> $${totalPrice}</li>
+                    <li><strong>Delivery Option:</strong> ${DeliveryOption}</li>
+                    <li><strong>Delivery Address:</strong> ${DeliveryAddress || 'N/A'}</li>
                   </ul>
                   <p>Please review and approve or reject this request in the system.</p>
                   <p>Best regards,</p>
                   <p>Rental Platform Team</p>`;
 
-    // Log email details
-    console.log(`Sending email to: ${owner.Email}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Text: ${text}`);
-    console.log(`HTML: ${html}`);
-
-    // Send the email
     await sendEmail(owner.Email, subject, text, html);
-
+    console.log("d"+DeliveryOption);
     return res.status(201).json({ message: 'Rental created successfully, owner has been notified', rental });
   } catch (error) {
-    console.error('Error creating rental:', error); // Log the actual error
+    console.error('Error creating rental:', error);
     return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
 
-// Update rental status (Owner/Admin action)
+
 exports.updateRentalStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -105,20 +120,88 @@ exports.updateRentalStatus = async (req, res) => {
   }
 
   try {
+    // Fetch the rental by ID
     const rental = await Rental.findOne({ where: { RentalID: id } });
 
     if (!rental) {
       return res.status(404).json({ message: 'Rental not found' });
     }
 
-    await rental.update({ Status: status });
+    // Check if the delivery option is 'Delivery'
+    if (rental.DeliveryOption === 'Delivery') {
+      // If the status is 'Rejected', do not store delivery info
+      if (status === 'Rejected') {
+        await rental.update({ Status: status });
+        return res.status(200).json({ message: 'Rental status updated successfully', rental });
+      }
+
+      // Proceed with storing delivery information for other statuses
+      const deliveryCoords = await Distance.geocodeAddress(rental.DeliveryAddress);
+      
+      if (!deliveryCoords) {
+        return res.status(400).json({ message: 'Invalid delivery address' });
+      }
+
+      // Fetch all active drivers
+      const drivers = await DeliveryDriver.findAll({
+        where: { Status: 'Active' }
+      });
+
+      let closestDriver = null;
+      let closestDistance = Infinity;
+
+      // Loop through drivers to find the closest one
+      for (const driver of drivers) {
+        const driverCoords = await Distance.geocodeAddress(driver.Area);
+
+        if (!driverCoords) {
+          console.error(`Could not geocode address for driver: ${driver.Area}`);
+          continue; // Skip if geocoding fails
+        }
+
+        const routeSummary = await Distance.getRoute(driverCoords, deliveryCoords);
+
+        if (routeSummary && routeSummary.length > 0) {
+          const distance = routeSummary.length; // Assume length is in meters
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestDriver = driver;
+          }
+        }
+      }
+
+      if (!closestDriver) {
+        return res.status(404).json({ message: 'No active drivers available for delivery.' });
+      }
+
+      // Create a new delivery record
+      const newDelivery = await Delivery.create({
+        RentalID: rental.RentalID,
+        DriverID: closestDriver.DriverID,
+        PickupLocation: rental.DeliveryAddress, // Assuming the pickup location is the delivery address
+        DeliveryLocation: rental.DeliveryAddress,
+        DeliveryDate: rental.StartDate, // Set current date as delivery date, or adjust as necessary
+        DeliveryStatus: 'Pending', // Set initial delivery status
+        CurrentLatitude: deliveryCoords.latitude, // Assuming geocodeAddress returns latitude
+        CurrentLongitude: deliveryCoords.longitude // Assuming geocodeAddress returns longitude
+      });
+
+      // Update the rental status and assign the driver
+      await rental.update({ Status: status, DriverID: closestDriver.DriverID });
+
+      return res.status(200).json({ message: 'Rental status updated successfully', rental, delivery: newDelivery });
+    } else {
+      // Update status without driver assignment for non-delivery options
+      await rental.update({ Status: status });
+    }
 
     return res.status(200).json({ message: 'Rental status updated successfully', rental });
   } catch (error) {
-    console.error('Error updating rental status:', error); // Log the actual error
+    console.error('Error updating rental status:', error);
     return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
+
 
 // Get all rentals for the current user (filtered by status)
 exports.getAllRentals = async (req, res) => {
