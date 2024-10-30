@@ -1,25 +1,36 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
+const cron = require('node-cron'); 
+require('dotenv').config();
+
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
-const ratingRoutes = require('./routes/ratingRoutes'); 
+//const ratingRoutes = require('./routes/ratingRoutes'); 
 const messageRouter = require('./routes/messageRoute'); 
+const ratingRoutes = require('./services/ratingService'); 
+
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
-const cron = require('node-cron'); // Single import
-
-
-const fs = require('fs');
-require('dotenv').config();
-
 // Initialize express app
 const app = express();
 
+
 // Middleware to parse JSON
+app.use(bodyParser.json());
 app.use(express.json());
+
+const fs = require('fs');
+
+
+
+/*const ratingService = require('./services/ratingService');
+app.use('/rate', ratingService);*/
+
+
 
 // Logging middleware for incoming requests
 app.use((req, res, next) => {
@@ -34,8 +45,9 @@ app.use('/api', profileRoutes);
 app.use('/api', deliveryRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
-app.use('/api', ratingRoutes);
+//app.use('/api', ratingRoutes);
 app.use('/api/messages', messageRouter);
+app.use('/rate', ratingRoutes); 
 
 // Sync with the database
 sequelize.sync()
@@ -85,5 +97,12 @@ console.log('Registered routes:');
 app._router.stack.forEach((middleware) => {
   if (middleware.route) {
     console.log(`${middleware.route.path} [${middleware.route.methods}]`);
+  }
+});
+
+console.log('Registered routes:');
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(`${middleware.route.path} [${Object.keys(middleware.route.methods).join(', ').toUpperCase()}]`);
   }
 });
