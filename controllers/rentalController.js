@@ -1,7 +1,7 @@
 const Item = require('../models/items');
-const Rental = require('../models/Rentals');
+const Rental = require('../models/Rental');
 const Delivery = require('../models/Delivery');
-const DeliveryDriver =require('../models/DeliveryDrivers');
+const DeliveryDriver =require('../models/DeliveryDriver');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/emailService'); // Import email service
 const Distance =require('../services/getDeliveryFeeByArea');
@@ -34,6 +34,11 @@ exports.createRental = async (req, res) => {
   try {
     const item = await Item.findOne({ where: { ItemID } });
     if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    // Check item availability
+    if (item.AvailabilityStatus !== 'Available') {
+      return res.status(400).json({ message: 'Item is not available for rental' });
+    }
 
     const owner = await User.findOne({ where: { UserID: item.UserID } });
     if (!owner) return res.status(404).json({ message: 'Owner not found' });
@@ -92,6 +97,8 @@ exports.createRental = async (req, res) => {
                   <ul>
                     <li><strong>Renter:</strong> ${req.user.fullName} (Email: ${req.user.email})</li>
                     <li><strong>Rental Period:</strong> From ${StartDate} to ${EndDate}</li>
+                    <li><strong>Rental Price:</strong> $${rentalPrice}</li>
+                    <li><strong>Delivery Price:</strong> $${deliveryFee}</li>
                     <li><strong>Total Price:</strong> $${totalPrice}</li>
                     <li><strong>Delivery Option:</strong> ${DeliveryOption}</li>
                     <li><strong>Delivery Address:</strong> ${DeliveryAddress || 'N/A'}</li>
@@ -101,7 +108,7 @@ exports.createRental = async (req, res) => {
                   <p>Rental Platform Team</p>`;
 
     await sendEmail(owner.Email, subject, text, html);
-    console.log("d"+DeliveryOption);
+    console.log("d" + DeliveryOption);
     return res.status(201).json({ message: 'Rental created successfully, owner has been notified', rental });
   } catch (error) {
     console.error('Error creating rental:', error);
@@ -200,6 +207,8 @@ exports.updateRentalStatus = async (req, res) => {
     console.error('Error updating rental status:', error);
     return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
+
+  //TOOOOOOOOOOODOOOOOOOOOOOOOOOOOOOOOOOOOOO html_email
 };
 
 
