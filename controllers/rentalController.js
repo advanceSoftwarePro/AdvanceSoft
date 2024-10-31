@@ -5,6 +5,78 @@ const DeliveryDriver =require('../models/DeliveryDriver');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/emailService'); // Import email service
 const Distance =require('../services/getDeliveryFeeByArea');
+const { sequelize } = require('../utils/database');
+const cron = require('node-cron');
+
+async function sendReminderEmails() {
+  try {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      const endOfTomorrow = new Date(tomorrow);
+      endOfTomorrow.setHours(23, 59, 59, 999);
+
+      // SQL query to fetch deliveries scheduled for tomorrow
+      const query = `
+          SELECT 
+              d."DriverID",
+              dd."Email" AS "DriverEmail",
+              r."RentalID",
+             
+              r."StartDate",
+              r."EndDate",
+              r."DeliveryAddress",
+              r."TotalPrice",
+              d."PickupLocation",
+              d."DeliveryLocation"
+          FROM 
+              advance."Deliveries" d
+          JOIN 
+              advance."DeliveryDrivers" dd ON d."DriverID" = dd."DriverID"
+          JOIN 
+              advance."Rentals" r ON d."RentalID" = r."RentalID"
+          WHERE 
+              d."DeliveryDate" >= :tomorrow AND d."DeliveryDate" <= :endOfTomorrow
+              AND r."Status" = 'Approved'
+              AND r."DeliveryOption" = 'Delivery';
+      `;
+
+      // Execute the SQL query
+      const [results] = await sequelize.query(query, {
+          replacements: { tomorrow, endOfTomorrow }
+      });
+
+      // Loop through the fetched results and send emails
+      for (const row of results) {
+          const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(row.PickupLocation)}&destination=${encodeURIComponent(row.DeliveryLocation)}`;
+          
+          const subject = `Upcoming Delivery for Rental #${row.RentalID}`;
+          const emailText = `Reminder: Your delivery for rental ${row.RentalName} starts tomorrow. 
+              Pickup Location: ${row.PickupLocation}
+              Delivery Location: ${row.DeliveryLocation}
+              Total Price: ${row.TotalPrice}
+              View Route: ${mapUrl}`;
+          
+          const emailHtml = `<p>Your delivery for rental <strong>${row.RentalName}</strong> starts tomorrow.</p>
+              <p><strong>Pickup Location:</strong> ${row.PickupLocation}</p>
+              <p><strong>Delivery Location:</strong> ${row.DeliveryLocation}</p>
+              <p><strong>Total Price:</strong> ${row.TotalPrice}</p>
+              <p><strong>Map Route:</strong> <a href="${mapUrl}">View Route</a></p>`;
+
+          await sendEmail(row.DriverEmail, subject, emailText, emailHtml);
+          console.log(`Sending email to: ${row.DriverEmail} for Rental ID: ${row.RentalID}`);
+      }
+  } catch (error) {
+      console.error('Error sending reminder emails:', error);
+  }
+}
+
+// Schedule the cron job
+cron.schedule('* * * * *', async () => {
+    console.log('Checking for deliveries starting tomorrow...');
+    await sendReminderEmails();
+});
 
 
 exports.createRental = async (req, res) => {
@@ -117,6 +189,7 @@ exports.createRental = async (req, res) => {
 };
 
 
+
 exports.updateRentalStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -154,6 +227,12 @@ exports.updateRentalStatus = async (req, res) => {
         where: { Status: 'Active' }
       });
 
+
+const availableDrivers = drivers.filter(driver => driver.Deliveries.length < 10);
+
+if (availableDrivers.length === 0) {
+  return res.status(404).json({ message: 'No active drivers available for delivery with less than 10 rentals.' });
+}      
       let closestDriver = null;
       let closestDistance = Infinity;
 
@@ -208,7 +287,7 @@ exports.updateRentalStatus = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 
-  //TOOOOOOOOOOODOOOOOOOOOOOOOOOOOOOOOOOOOOO html_email
+  //To_DO html_email
 };
 
 

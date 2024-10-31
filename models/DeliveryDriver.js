@@ -39,4 +39,10 @@ DeliveryDriver.addHook('beforeUpdate', (driver) => {
   driver.UpdatedAt = new Date();
 });
 
+DeliveryDriver.associate = (models) => {
+  DeliveryDriver.hasMany(models.Delivery, {
+    foreignKey: 'DriverID',
+    as: 'deliveries', // Ensure this matches your query
+  });
+};
 module.exports = DeliveryDriver;

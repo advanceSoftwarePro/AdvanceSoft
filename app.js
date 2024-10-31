@@ -37,10 +37,12 @@ app.use('/api/rentals', rentalRoutes);
 app.use('/api', ratingRoutes);
 app.use('/api/messages', messageRouter);
 
+
 // Sync with the database
 sequelize.sync()
   .then(() => {
     console.log('Database synchronized successfully');
+    
     
     // Start the server after the DB sync
     const PORT = process.env.PORT || 3000;
