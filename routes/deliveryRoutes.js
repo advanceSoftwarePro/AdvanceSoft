@@ -3,14 +3,11 @@ const router = express.Router();
 const deliveryController = require('../controllers/deliveryController');
 const { verifyUserToken } = require('../utils/authMiddleware');
 
-// Owner creates a new delivery
-router.post('/', verifyUserToken, deliveryController.createDelivery);
-
-// Owner updates the delivery's current location
-router.put('/:id/location', verifyUserToken, deliveryController.updateDeliveryLocation);
-
-// Renter tracks the delivery's current location
-router.get('/:id/location', verifyUserToken, deliveryController.getDeliveryLocation);
-
+// Existing routes...
+router.post('/deliveries',verifyUserToken, deliveryController.createDelivery);
+router.get('/deliveries/:id', verifyUserToken,deliveryController.getDelivery);
+router.get('/deliveries/location/:id', verifyUserToken,deliveryController.getDeliveryLocationForCustomer); // New route
+//router.put('/deliveries/location', verifyUserToken,deliveryController.updateDeliveryLocation);
+router.delete('/deliveries/:id',verifyUserToken, deliveryController.deleteDelivery);
 
 module.exports = router;

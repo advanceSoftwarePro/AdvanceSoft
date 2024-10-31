@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Rental = require('./Rentals');  // Import the Rental model
+//const Rental = require('./Rentals');  // Import the Rental model
 
 
 const User = sequelize.define(
@@ -10,6 +10,8 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: 'UserID' // Explicitly define the column name
+
     },
     "FullName": {
       type: DataTypes.STRING(100),
@@ -35,8 +37,12 @@ const User = sequelize.define(
     },
     "Rating": {
       type: DataTypes.DECIMAL(3, 2),
-      defaultValue: 0.0,
+      defaultValue: 5.0,
     },
+    "numberOfRatings" : {
+      type: DataTypes.INTEGER,
+      defaultValue: 0 // Initially set to 0
+  },
     "Role": {
       type: DataTypes.ENUM('Renter', 'Owner', 'Both'),
       defaultValue: 'Both',
@@ -60,12 +66,11 @@ const User = sequelize.define(
   },
   {
     schema: 'advance',
-    tableName: '"Users"',
+    tableName: 'Users',
     timestamps: false,  // Disable auto-generated timestamps
   }
 );
 // In models/User.js
-User.hasMany(Rental, { foreignKey: 'RenterID' });
-Rental.belongsTo(User, { foreignKey: 'RenterID', as: 'Renter' });
+//User.hasMany(Rental, { foreignKey: 'RenterID', as: 'Rentals' }); 
 
 module.exports = User;

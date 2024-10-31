@@ -31,7 +31,9 @@ exports.getSubcategories = async (req, res) => {
 
     if (subcategories.length === 0) {
       const [results, metadata] = await sequelize.query(
-        `SELECT * FROM "advance"."Items" WHERE "CategoryID" = ${parentId};`
+        `SELECT "ImageURL", "Title", "AvailabilityStatus", "Condition", "DailyPrice" 
+         FROM "advance"."Items" 
+         WHERE "CategoryID" = ${parentId};`
       );
      
     if (results.length === 0) {

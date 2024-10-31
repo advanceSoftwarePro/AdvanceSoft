@@ -50,10 +50,7 @@ const Item = sequelize.define(
       type: DataTypes.ENUM('Available', 'Unavailable'),
       defaultValue: 'Available',
     },
-    DeliveryOptions: {
-      type: DataTypes.ENUM('Pickup', 'Delivery'),
-      defaultValue: 'Pickup',
-    },
+
     ImageURL: {
       type: DataTypes.STRING(255),
     },

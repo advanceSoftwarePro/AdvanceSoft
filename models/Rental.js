@@ -38,6 +38,14 @@ const Rentals = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
+    DeliveryOption: {
+      type: DataTypes.STRING, // Ensure this matches your DB type
+      allowNull: false,
+    },
+    DeliveryAddress: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     Status: {
       type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Completed'),
       defaultValue: 'Pending',
