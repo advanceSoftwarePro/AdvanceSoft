@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
 const cron = require('node-cron'); 
+const cors = require('cors');
+//const reviewRoutes = require('./services/reviewService');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -12,7 +14,8 @@ const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
 //const ratingRoutes = require('./routes/ratingRoutes'); 
 const messageRouter = require('./routes/messageRoute'); 
-const ratingRoutes = require('./services/ratingService'); 
+const ratingRoutes = require('./services/ratingService');
+const reviewRoutes = require('./routes/reviewRoutes'); 
 
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 // Initialize express app
@@ -22,6 +25,9 @@ const app = express();
 // Middleware to parse JSON
 app.use(bodyParser.json());
 app.use(express.json());
+app.use(cors());
+
+
 
 const fs = require('fs');
 
@@ -48,6 +54,9 @@ app.use('/api/rentals', rentalRoutes);
 //app.use('/api', ratingRoutes);
 app.use('/api/messages', messageRouter);
 app.use('/rate', ratingRoutes); 
+//app.use('/api/reviews', reviewRoutes);
+app.use('/api/reviews', reviewRoutes);
+
 
 // Sync with the database
 sequelize.sync()
