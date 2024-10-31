@@ -1,4 +1,4 @@
-const express = require('express');
+/*const express = require('express');
 const ratingController = require('../controllers/ratingController');
 const { verifyUserToken } = require('../utils/authMiddleware');
 const router = express.Router();
@@ -9,6 +9,6 @@ router.post('/users/:UserID/rate', verifyUserToken , ratingController.submitRati
     console.log('Rate user endpoint hit:', req.params.UserID);
     next();
 }, ratingController.submitRating);
-*/
+*
 
-module.exports = router;
+module.exports = router;*/
