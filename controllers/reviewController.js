@@ -3,20 +3,18 @@ const Review = require('../models/review');
 
 exports.createReview = async (req, res) => {
     try {
-        const { item_id, user_id, review, rating } = req.body;
-
-        const newReview = await Review.create({
-            item_id,
-            user_id,
-            review,
-            rating,
-        });
-
-        return res.status(201).json({ message: 'Review created successfully!', review: newReview });
+      const { item_id, user_id, review, rating } = req.body;
+  
+      const newReview = await Review.create({ item_id, user_id, review, rating });
+      res.status(201).json(newReview);
     } catch (error) {
-        return res.status(500).json({ error: 'Failed to create review.' });
+      if (error.name === "SequelizeUniqueConstraintError") {
+        return res.status(400).json({ error: "User has already rated this item." });
+      }
+      res.status(500).json({ error: "Failed to create review." });
     }
-};
+  };
+  
 
 exports.getReviewsByItemId = async (req, res) => {
     try {

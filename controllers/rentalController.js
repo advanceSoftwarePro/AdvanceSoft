@@ -2,9 +2,9 @@ const Item = require('../models/items');
 const Rental = require('../models/Rental');
 const Delivery = require('../models/Delivery');
 const DeliveryDriver =require('../models/DeliveryDriver');
-const User = require('../models/user');
-const { sendEmail } = require('../utils/emailService'); // Import email service
+const User = require('../models/User');
 const Distance =require('../services/getDeliveryFeeByArea');
+const { sendEmail } = require('../utils/emailService'); 
 
 const endpointSecret = 'whsec_KPIBlGQlE48XnpSdkPHKRIdu2p2GVMO7'; 
 const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI'); // Replace with your Stripe secret key
@@ -365,7 +365,7 @@ exports.updateRentalStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
-
+*/
 
 exports.getAllRentals = async (req, res) => {
   const { status } = req.query; // Get status from query parameter
@@ -535,5 +535,24 @@ exports.checkPaymentStatusAndUpdateRental = async (req, res) => {
   } catch (error) {
       console.error("Error checking payment status:", error.message);
       return res.status(500).json({ error: 'Failed to check payment status' });
+  }
+};
+
+
+exports.getCompletedRentals = async (req, res) => {
+  try {
+    const rentals = await Rental.findAll({
+      where: { Status: 'Completed' }, // Ensure the case matches your model's schema
+      include: [{ model: Item, as: 'Item' }], // Include related Item details
+    });
+
+    if (!rentals || rentals.length === 0) {
+      return res.status(404).json({ message: 'No completed rentals found.' });
+    }
+
+    res.status(200).json({ rentals });
+  } catch (error) {
+    console.error('Error fetching completed rentals:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
