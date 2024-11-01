@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-//const Rental = require('./Rentals');  // Import the Rental model
-
 
 const User = sequelize.define(
   'User',
@@ -10,8 +8,7 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
-      field: 'UserID' // Explicitly define the column name
-
+      field: 'UserID'
     },
     "FullName": {
       type: DataTypes.STRING(100),
@@ -39,10 +36,10 @@ const User = sequelize.define(
       type: DataTypes.DECIMAL(3, 2),
       defaultValue: 5.0,
     },
-    "numberOfRatings" : {
+    "numberOfRatings": {
       type: DataTypes.INTEGER,
-      defaultValue: 0 // Initially set to 0
-  },
+      defaultValue: 0
+    },
     "Role": {
       type: DataTypes.ENUM('Renter', 'Owner', 'Both'),
       defaultValue: 'Both',
@@ -55,22 +52,24 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
     },
-    "DOB": {  // New column for Date of Birth
+    "DOB": {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    "Gender": {  // New column for Gender using the enum type
+    "Gender": {
       type: DataTypes.ENUM('Male', 'Female'),
       allowNull: true,
     },
+    "paymentIntent": {  // New column for payment intent
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    }
   },
   {
     schema: 'advance',
     tableName: 'Users',
-    timestamps: false,  // Disable auto-generated timestamps
+    timestamps: false,
   }
 );
-// In models/User.js
-//User.hasMany(Rental, { foreignKey: 'RenterID', as: 'Rentals' }); 
 
 module.exports = User;

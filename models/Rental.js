@@ -40,7 +40,7 @@ const Rentals = sequelize.define(
       allowNull: false,
     },
     DeliveryOption: {
-      type: DataTypes.STRING, // Ensure this matches your DB type
+      type: DataTypes.STRING,
       allowNull: false,
     },
     DeliveryAddress: {
@@ -51,6 +51,24 @@ const Rentals = sequelize.define(
       type: DataTypes.ENUM('Pending', 'Approved', 'Rejected', 'Completed'),
       defaultValue: 'Pending',
     },
+    paymentStatus: {
+      type: DataTypes.ENUM('Pending', 'Paid', 'Failed'),
+      defaultValue: 'Pending',
+    },
+    paymentIntentId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    paymentMethod: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    
+    depositRefunded: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
   },
   {
     schema: 'advance',
@@ -61,6 +79,5 @@ const Rentals = sequelize.define(
 
 // Define the relationship here
 Rentals.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
-
 
 module.exports = Rentals;

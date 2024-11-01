@@ -1,5 +1,5 @@
 
-const User = require('../models/User');
+const User = require('../models/user');
 const authService = require('../services/authService');
 const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI'); // Replace with your Stripe secret key
 const { validateRegister } = require('../utils/validators');
@@ -167,6 +167,7 @@ exports.confirmOwnerPayment = async (req, res) => {
       Password: hashedPassword,
       Role: 'Owner',
       VerificationStatus: 'Verified',
+      paymentIntent:paymentIntentId
     };
 
     // Save the user in the database

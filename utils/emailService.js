@@ -19,6 +19,11 @@ const transporter = nodemailer.createTransport({
 // Send email function
 exports.sendEmail = async (to, subject, text, html) => {
   try {
+    console.log('Sending email to:', to); // Log recipient email
+  console.log('Subject:', subject);
+  console.log('Text:', text);
+  console.log('HTML:', html);
+  
     const info = await transporter.sendMail({
       from: '"Rental Platform" <no-reply@rentalplatform.com>', // Sender address
       to: to, // Receiver's email
