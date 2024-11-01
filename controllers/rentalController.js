@@ -2,9 +2,9 @@ const Item = require('../models/items');
 const Rental = require('../models/Rental');
 const Delivery = require('../models/Delivery');
 const DeliveryDriver =require('../models/DeliveryDriver');
-const User = require('../models/user');
-const { sendEmail } = require('../utils/emailService'); // Import email service
+const User = require('../models/User');
 const Distance =require('../services/getDeliveryFeeByArea');
+const { sendEmail } = require('../utils/emailService'); 
 
 exports.createRental = async (req, res) => {
   const { ItemID, StartDate, EndDate, DeliveryOption, DeliveryAddress } = req.body;
@@ -117,6 +117,134 @@ exports.createRental = async (req, res) => {
 
 
 
+
+
+exports.updateRentalStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  // Only Owners or Admins can update rental status
+  if (req.user.role !== 'Owner' && req.user.role !== 'Admin') {
+    return res.status(403).json({ message: 'Only Owners or Admins can update rental statuses' });
+  }
+
+  // Validate the status input
+  const allowedStatuses = ['Pending', 'Approved', 'Rejected', 'Completed'];
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value. Allowed values are Pending, Approved, Rejected, and Completed.' });
+  }
+
+  try {
+    // Fetch the rental by ID
+    const rental = await Rental.findOne({ where: { RentalID: id } });
+    if (!rental) {
+      return res.status(404).json({ message: 'Rental not found' });
+    }
+    
+    // Fetch renter's details
+    const renter = await User.findOne({ where: { UserID: rental.RenterID } });
+    if (!renter) {
+      return res.status(404).json({ message: 'Renter not found' });
+    }
+
+    // Fetch item details for email content
+    const item = await Item.findOne({ where: { ItemID: rental.ItemID } });
+    const itemTitle = item ? item.Title : 'the item';
+
+    // Prepare email subject, plain text, and HTML content
+    const emailSubject = `Rental Request ${status === 'Rejected' ? 'Rejected' : 'Accepted'}`;
+    const emailText = `Hello ${renter.FullName},
+
+Your rental request for ${itemTitle} has been ${status} by the owner.
+
+${status === 'Accepted' ? 'Thank you for renting with us. We will process your rental shortly.' : 'We apologize that your rental request has been rejected.'}
+
+If you have any questions, please feel free to contact us.
+
+Best Regards,
+Your Company Team`;
+
+    const emailHtml = `
+      <h3>Hello ${renter.FullName},</h3>
+      <p>Your rental request for <strong>${itemTitle}</strong> has been <strong>${status}</strong> by the owner.</p>
+      ${status === 'Accepted' ? `<p>Thank you for renting with us. We will process your rental shortly.</p>` : `<p>We apologize that your rental request has been rejected.</p>`}
+      <p>If you have any questions, please feel free to contact us.</p>
+      <p>Best Regards,<br>Your Company Team</p>
+    `;
+
+    // Check if the delivery option is 'Delivery'
+    if (rental.DeliveryOption === 'Delivery') {
+      if (status === 'Rejected') {
+        await rental.update({ Status: status });
+        await sendEmail(renter.Email, emailSubject, emailText, emailHtml); // Send email
+        return res.status(200).json({ message: 'Rental status updated successfully and email sent to renter.', rental });
+      }
+
+      // Continue with driver assignment for non-rejected statuses
+      const deliveryCoords = await Distance.geocodeAddress(rental.DeliveryAddress);
+      if (!deliveryCoords) {
+        return res.status(400).json({ message: 'Invalid delivery address' });
+      }
+
+      const drivers = await DeliveryDriver.findAll({ where: { Status: 'Active' } });
+      const availableDrivers = drivers.filter(driver => driver.Deliveries.length < 10);
+      if (availableDrivers.length === 0) {
+        return res.status(404).json({ message: 'No active drivers available for delivery with less than 10 rentals.' });
+      }
+
+      let closestDriver = null;
+      let closestDistance = Infinity;
+      for (const driver of drivers) {
+        const driverCoords = await Distance.geocodeAddress(driver.Area);
+        if (!driverCoords) {
+          console.error(`Could not geocode address for driver: ${driver.Area}`);
+          continue;
+        }
+
+        const routeSummary = await Distance.getRoute(driverCoords, deliveryCoords);
+        if (routeSummary && routeSummary.length > 0) {
+          const distance = routeSummary.length;
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestDriver = driver;
+          }
+        }
+      }
+
+      if (!closestDriver) {
+        return res.status(404).json({ message: 'No active drivers available for delivery.' });
+      }
+
+      const newDelivery = await Delivery.create({
+        RentalID: rental.RentalID,
+        DriverID: closestDriver.DriverID,
+        PickupLocation: rental.DeliveryAddress,
+        DeliveryLocation: rental.DeliveryAddress,
+        DeliveryDate: rental.StartDate,
+        DeliveryStatus: 'Pending',
+        CurrentLatitude: deliveryCoords.latitude,
+        CurrentLongitude: deliveryCoords.longitude
+      });
+
+      await rental.update({ Status: status, DriverID: closestDriver.DriverID });
+      await sendEmail(renter.Email, emailSubject, emailText, emailHtml); // Send email
+
+      return res.status(200).json({ message: 'Rental status updated successfully, delivery assigned, and email sent to renter.', rental, delivery: newDelivery });
+    } else {
+      await rental.update({ Status: status });
+      await sendEmail(renter.Email, emailSubject, emailText, emailHtml); // Send email
+      return res.status(200).json({ message: 'Rental status updated successfully and email sent to renter.', rental });
+    }
+  } catch (error) {
+    console.error('Error updating rental status:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
+  }
+};
+
+
+
+
+/*
 exports.updateRentalStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -216,7 +344,7 @@ if (availableDrivers.length === 0) {
 
   //To_DO html_email
 };
-
+*/
 
 // Get all rentals for the current user (filtered by status)
 exports.getAllRentals = async (req, res) => {
@@ -251,5 +379,24 @@ exports.getAllRentals = async (req, res) => {
   } catch (error) {
     console.error('Error fetching rentals:', error); // Log the actual error
     return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
+  }
+};
+
+
+exports.getCompletedRentals = async (req, res) => {
+  try {
+    const rentals = await Rental.findAll({
+      where: { Status: 'Completed' }, // Ensure the case matches your model's schema
+      include: [{ model: Item, as: 'Item' }], // Include related Item details
+    });
+
+    if (!rentals || rentals.length === 0) {
+      return res.status(404).json({ message: 'No completed rentals found.' });
+    }
+
+    res.status(200).json({ rentals });
+  } catch (error) {
+    console.error('Error fetching completed rentals:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };

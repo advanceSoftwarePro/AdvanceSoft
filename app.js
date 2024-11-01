@@ -10,16 +10,31 @@ const rentalRoutes = require('./routes/rentalRoutes');
 const messageRouter = require('./routes/messageRoute'); 
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 const cron = require('node-cron'); // Single import
-
+const userRoutes = require('./routes/userRoutes');
+const promotionRoutes = require('./routes/promotionRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+require('./controllers/rewardController'); // Import the cron job setup
 
 const fs = require('fs');
 require('dotenv').config();
+const Promotion = require('./models/Promotion');
+Promotion.sync({ alter: true }); // use { force: true } to drop and recreate the table
+
 
 // Initialize express app
 const app = express();
-
 // Middleware to parse JSON
 app.use(express.json());
+
+
+
+app.use('/admin/users', userRoutes);
+app.use('/admin/rentals', rentalRoutes);
+app.use('/admin/promotions', promotionRoutes);
+app.use('/admin', adminRoutes);
+
+
+
 
 // Logging middleware for incoming requests
 app.use((req, res, next) => {
@@ -37,7 +52,8 @@ app.use('/api/rentals', rentalRoutes);
 
 app.use('/api/messages', messageRouter);
 
-// Sync with the database
+
+// Sync database
 sequelize.sync()
   .then(() => {
     console.log('Database synchronized successfully');
@@ -86,4 +102,11 @@ app._router.stack.forEach((middleware) => {
   if (middleware.route) {
     console.log(`${middleware.route.path} [${middleware.route.methods}]`);
   }
+});
+
+const chartRoutes = require('./routes/chartRoutes');
+app.use('/api', chartRoutes);
+const PORT = process.env.PORT || 3001; // Change to 3001 or another available port
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
