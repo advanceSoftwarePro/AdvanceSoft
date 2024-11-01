@@ -12,4 +12,13 @@ router.get('/', verifyUserToken, rentalController.getAllRentals);
 // Update rental status (Owner/Admin action)
 router.put('/:id/status', verifyUserToken, rentalController.updateRentalStatus);
 
+router.post('/refund/:rentalId',verifyUserToken, rentalController.refundDeposit);
+
+router.get('/check-payment-status/:rentalId',verifyUserToken,rentalController.checkPaymentStatusAndUpdateRental);
+
+// Update rental status (Owner/Admin action)
+router.put('/:id/status', verifyUserToken, rentalController.updateRentalStatus);
+
+router.get('/rentals/completed', rentalController.getCompletedRentals);
+
 module.exports = router;
