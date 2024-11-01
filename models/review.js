@@ -1,4 +1,3 @@
-// models/review.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database'); // Adjust the path as necessary
 
@@ -12,16 +11,16 @@ const Review = sequelize.define('Review', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Items', // Adjust if your table name is different
-            key: 'ItemID', // Foreign key reference
+            model: 'Items', // Reference the Items table
+            key: 'ItemID', // Foreign key to ItemID in Items table
         },
     },
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users', // Adjust if your table name is different
-            key: 'UserID', // Foreign key reference
+            model: 'Users', // Reference the Users table
+            key: 'UserID', // Foreign key to UserID in Users table
         },
     },
     review: {
@@ -42,7 +41,14 @@ const Review = sequelize.define('Review', {
     },
 }, {
     timestamps: false,
-    schema: 'advance', // Add this line to specify the schema
+    schema: 'advance', // Specifies the schema to be used
+    tableName: 'Reviews',
+    indexes: [
+        {
+            unique: true, // Ensures user can only review each item once
+            fields: ['item_id', 'user_id'],
+        },
+    ],
 });
 
 module.exports = Review;

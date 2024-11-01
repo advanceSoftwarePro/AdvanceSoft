@@ -16,6 +16,9 @@ const rentalRoutes = require('./routes/rentalRoutes');
 const messageRouter = require('./routes/messageRoute'); 
 const ratingRoutes = require('./services/ratingService');
 const reviewRoutes = require('./routes/reviewRoutes'); 
+const favoriteRoutes = require('./routes/favoriteRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes'); 
+
 
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 // Initialize express app
@@ -56,6 +59,8 @@ app.use('/api/messages', messageRouter);
 app.use('/rate', ratingRoutes); 
 //app.use('/api/reviews', reviewRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/wishlists', wishlistRoutes);
 
 
 // Sync with the database
