@@ -12,4 +12,6 @@ router.get('/', verifyUserToken, rentalController.getAllRentals);
 // Update rental status (Owner/Admin action)
 router.put('/:id/status', verifyUserToken, rentalController.updateRentalStatus);
 
+router.get('/rentals/completed', rentalController.getCompletedRentals);
+
 module.exports = router;

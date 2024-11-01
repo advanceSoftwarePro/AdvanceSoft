@@ -58,6 +58,7 @@ const Delivery = sequelize.define('Delivery', {
 
 // Define associations
 Delivery.associate = (models) => {
+  
   Delivery.belongsTo(models.Rental, {
     foreignKey: 'RentalID',
     as: 'rental',

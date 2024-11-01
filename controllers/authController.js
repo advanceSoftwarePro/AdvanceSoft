@@ -149,7 +149,7 @@ exports.verifyOwnerEmail = async (req, res) => {
 
 exports.confirmOwnerPayment = async (req, res) => {
   const { paymentIntentId, email, fullName, password } = req.body;
-console.log(paymentIntentId);
+
   try {
     // Confirm the payment intent with Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);

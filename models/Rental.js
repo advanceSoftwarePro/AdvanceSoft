@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const Item = require('./items');
+const Delivery = require('./Delivery'); // Adjust path as necessary
 
 const Rentals = sequelize.define(
   'Rentals',
@@ -60,5 +61,6 @@ const Rentals = sequelize.define(
 
 // Define the relationship here
 Rentals.belongsTo(Item, { foreignKey: 'ItemID', as: 'Item' });
+
 
 module.exports = Rentals;
