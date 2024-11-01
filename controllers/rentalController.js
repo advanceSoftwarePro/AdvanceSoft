@@ -365,7 +365,7 @@ exports.updateRentalStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
-*/
+
 
 exports.getAllRentals = async (req, res) => {
   const { status } = req.query; // Get status from query parameter
