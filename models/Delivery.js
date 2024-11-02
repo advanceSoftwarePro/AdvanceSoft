@@ -42,14 +42,11 @@ const Delivery = sequelize.define('Delivery', {
     allowNull: false,
     defaultValue: 'Pending', // Default status
   },
-  CurrentLatitude: {
-    type: DataTypes.FLOAT,
+  currentLocation: {
+    type: DataTypes.STRING, // Or DataTypes.JSON if you used JSON format
     allowNull: true,
   },
-  CurrentLongitude: {
-    type: DataTypes.FLOAT,
-    allowNull: true,
-  },
+  
 }, {
   timestamps: false,
   schema: 'advance',
