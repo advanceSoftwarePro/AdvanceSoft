@@ -2,6 +2,9 @@ const { QueryTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 exports.getStatistics = async (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+}
   try {
     const result = await sequelize.query(`
       SELECT 

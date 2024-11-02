@@ -576,6 +576,9 @@ exports.checkPaymentStatusAndUpdateRental = async (req, res) => {
 
 exports.getCompletedRentals = async (req, res) => {
   try {
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
     const rentals = await Rental.findAll({
       where: { Status: 'Completed' }, // Ensure the case matches your model's schema
       include: [{ model: Item, as: 'Item' }], // Include related Item details

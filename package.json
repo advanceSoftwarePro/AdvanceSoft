@@ -26,12 +26,15 @@
     "mysql": "^2.18.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
+    "pdfkit": "^0.15.1",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
+    "puppeteer": "^23.6.1",
     "redis": "^4.7.0",
     "sequelize": "^6.37.5",
     "socket.io": "^4.8.0",
-    "stripe": "^17.1.0"
+    "stripe": "^17.1.0",
+    "tmp-promise": "^3.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"

@@ -19,6 +19,5 @@ router.get('/check-payment-status/:rentalId',verifyUserToken,rentalController.ch
 // Update rental status (Owner/Admin action)
 router.put('/:id/status', verifyUserToken, rentalController.updateRentalStatus);
 
-router.get('/rentals/completed', rentalController.getCompletedRentals);
 
 module.exports = router;

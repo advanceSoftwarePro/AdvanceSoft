@@ -10,4 +10,5 @@ router.get('/deliveries/location/:id', verifyUserToken,deliveryController.getDel
 //router.put('/deliveries/location', verifyUserToken,deliveryController.updateDeliveryLocation);
 router.delete('/deliveries/:id',verifyUserToken, deliveryController.deleteDelivery);
 
+
 module.exports = router;

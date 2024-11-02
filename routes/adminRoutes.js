@@ -1,7 +1,8 @@
 const express = require('express');
-const router = express.Router();
 const AdminController = require('../controllers/AdminController');
+const { verifyUserToken } = require('../utils/authMiddleware');
+const router = express.Router();
 
-router.get('/statistics', AdminController.getStatistics);
+router.get('/statistics',verifyUserToken, AdminController.getStatistics);
 
 module.exports = router;
