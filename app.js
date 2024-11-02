@@ -1,31 +1,38 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
+const cron = require('node-cron');
+const cors = require('cors');
+const { User } = require('./models/user');
+const { Op } = require('sequelize');
+require('dotenv').config();
+
+const Promotion=require('./routes/promotionRoutes');
+const reportRoute = require('./routes/reportRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
-const Promotion=require('./routes/promotionRoutes');const reportRoute = require('./routes/reportRoutes');
-
-const messageRouter = require('./routes/messageRoute'); 
-const user= require('./routes/userRoutes'); 
-const Admin= require('./routes/adminRoutes'); 
+const Promotion = require('./routes/promotionRoutes');
+const messageRouter = require('./routes/messageRoute');
+const user = require('./routes/userRoutes');
+const Admin = require('./routes/adminRoutes');
+const ratingRoutes = require('./services/ratingService');
+const reviewRoutes = require('./routes/reviewRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const accountRoutes = require('./routes/accountRoutes');
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
-const cron = require('node-cron'); // Single import
-
-const userRoutes = require('./routes/userRoutes');
-const promotionRoutes = require('./routes/promotionRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-require('./controllers/rewardController'); // Import the cron job setup
-const fs = require('fs');
-require('dotenv').config();
 
 // Initialize express app
 const app = express();
 
 // Middleware to parse JSON
+app.use(bodyParser.json());
 app.use(express.json());
+app.use(cors());
 
 // Logging middleware for incoming requests
 app.use((req, res, next) => {
@@ -33,8 +40,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
-const chartRoutes = require('./routes/chartRoutes');
 // Registering routes
 app.use('/api', authRoutes);
 app.use('/api', categoryRoutes);
@@ -44,12 +49,14 @@ app.use('/api', reportRoute);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/messages', messageRouter);
-app.use('/admin/promotions', promotionRoutes);
+app.use('/admin/promotions', Promotion);
+app.use('/rate', ratingRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/wishlists', wishlistRoutes);
+app.use('/', accountRoutes);
 app.use('/admin', adminRoutes);
 app.use('/admin/users', userRoutes);
-
-
-
 
 
 
@@ -62,22 +69,42 @@ sequelize.sync()
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-    });
 
-    // Schedule a cleanup of expired tokens every 24 hours
-    cron.schedule('0 0 * * *', () => { // Runs daily at midnight
-      console.log('Cleaning expired tokens...');
-      cleanExpiredTokens();
-    });
+      // Schedule a cleanup of expired tokens every 24 hours
+      cron.schedule('0 0 * * *', () => { // Runs daily at midnight
+        console.log('Cleaning expired tokens...');
+        cleanExpiredTokens();
+      });
 
-    // Schedule tasks, e.g., updating delivery locations every 10 minutes
-    cron.schedule('*/10 * * * *', async () => {
-      try {
-        console.log('Updating delivery locations...');
-        await require('./services/locationUpdater').updateDeliveryLocations();
-      } catch (error) {
-        console.error('Error updating delivery locations:', error);
-      }
+      // Schedule tasks, e.g., deleting users every minute
+      cron.schedule('* * * * *', async () => { // Runs every minute
+        try {
+          const now = new Date();
+          const cutoffTime = new Date(now.getTime() - 2 * 60 * 1000);
+
+          const usersToDelete = await User.findAll({
+            where: {
+              DeactivationDate: {
+                [Op.lte]: cutoffTime
+              }
+            }
+          });
+
+          console.log('Users to be deleted:', usersToDelete.length);
+
+          const deletedUsers = await User.destroy({
+            where: {
+              DeactivationDate: {
+                [Op.lte]: cutoffTime
+              }
+            }
+          });
+
+          console.log(`${deletedUsers} user(s) deleted from the database.`);
+        } catch (error) {
+          console.error('Error deleting old deactivated accounts:', error);
+        }
+      });
     });
   })
   .catch(err => {
@@ -103,3 +130,49 @@ app._router.stack.forEach((middleware) => {
     console.log(`${middleware.route.path} [${middleware.route.methods}]`);
   }
 });
+
+
+/*
+cron.schedule('0 0 * * *', async () => { // Run daily at midnight
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+  try {
+    await User.destroy({
+      where: {
+        AccountStatus: 'Deactivated',
+        DeactivationDate: { [Op.lt]: oneMonthAgo }
+      }
+    });
+    console.log('Deleted expired deactivated accounts');
+  } catch (error) {
+    console.error('Failed to delete expired accounts:', error);
+  }
+});
+
+*/
+
+// This cron job runs every minute
+/*cron.schedule('* * * * *', async () => {
+  try {
+    // Get the current time
+    const now = new Date();
+
+    // Calculate the cutoff time (2 minutes ago)
+    const cutoffTime = new Date(now.getTime() - 2 * 60 * 1000);
+
+    // Delete users whose DeactivationDate is less than or equal to cutoffTime
+    const deletedUsers = await User.destroy({
+      where: {
+        DeactivationDate: {
+          [Op.lte]: cutoffTime // Sequelize operator for less than or equal to
+        }
+      }
+    });
+
+    console.log(`${deletedUsers} user(s) deleted from the database.`);
+  } catch (error) {
+    console.error('Error deleting old deactivated accounts:', error);
+  }
+});
+*/

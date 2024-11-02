@@ -192,6 +192,10 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email' });
     }
 
+    if (user.AccountStatus === 'Deactivated') {
+      return res.status(403).json({ message: 'Account is deactivated. Please contact support.' });
+  }
+
     const isPasswordValid = await bcrypt.compare(password, user.Password);
     
     if (!isPasswordValid) {
