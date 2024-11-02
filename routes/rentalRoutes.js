@@ -18,6 +18,6 @@ router.get('/check-payment-status/:rentalId',verifyUserToken,rentalController.ch
 
 
 
-router.get('/completed', rentalController.getCompletedRentals);
+router.get('/rentals/completed', rentalController.getCompletedRentals);
 
 module.exports = router;

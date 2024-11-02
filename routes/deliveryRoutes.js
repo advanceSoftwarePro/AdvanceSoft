@@ -10,7 +10,6 @@ router.get('/deliveries/location/:id', verifyUserToken,deliveryController.getDel
 //router.put('/deliveries/location', verifyUserToken,deliveryController.updateDeliveryLocation);
 router.delete('/deliveries/:id',verifyUserToken, deliveryController.deleteDelivery);
 
-router.get('/complete-delivery', deliveryController.completeDelivery);
 
 module.exports = router;
 

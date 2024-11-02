@@ -222,6 +222,10 @@ const getDeliveryLocationForCustomer = async (req, res) => {
   }
 };
 
+
+
+
+
 module.exports = {
   createDelivery,
   getDelivery,

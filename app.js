@@ -6,7 +6,8 @@ const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
-const Promotion=require('./routes/promotionRoutes');
+const Promotion=require('./routes/promotionRoutes');const reportRoute = require('./routes/reportRoutes');
+
 const messageRouter = require('./routes/messageRoute'); 
 const user= require('./routes/userRoutes'); 
 const Admin= require('./routes/adminRoutes'); 
@@ -39,10 +40,13 @@ app.use('/api', authRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', deliveryRoutes);
+app.use('/api', reportRoute);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/messages', messageRouter);
 app.use('/admin/promotions', promotionRoutes);
+app.use('/admin', adminRoutes);
+app.use('/admin/users', userRoutes);
 
 
 
