@@ -2,7 +2,6 @@ const Item = require('../models/items');
 const Rental = require('../models/Rental');
 const Delivery = require('../models/Delivery');
 const DeliveryDriver =require('../models/DeliveryDriver');
-const User = require('../models/User');
 const Distance =require('../services/getDeliveryFeeByArea');
 const { sendEmail } = require('../utils/emailService'); 
 
@@ -110,6 +109,37 @@ const createRentalAndNotifyOwner = async (req, item, owner, totalPrice, delivery
   return rental;
 };
 
+//////////
+////////////
+const Promotion = require('../models/Promotion');
+const { Op } = require('sequelize');
+
+async function getApplicablePromotion(rentalStartDate, basePrice) {
+    try {
+        // Find active promotions where rentalStartDate is within the promotion date range
+        const promotion = await Promotion.findOne({
+            where: {
+                isActive: true,
+                startDate: { [Op.lte]: rentalStartDate }, // Promotion start date is before or on the rental start date
+                endDate: { [Op.gte]: rentalStartDate }, // Promotion end date is after or on the rental start date
+            },
+        });
+
+        if (!promotion) {
+            return basePrice; // No promotion found, return 0
+        }
+
+        // Calculate the discount amount
+        const discountAmount = (promotion.discountPercentage / 100) * basePrice;
+        return discountAmount; // Return the discount amount
+    } catch (error) {
+        console.error('Error fetching applicable promotion:', error);
+        throw error;
+    }
+}
+
+
+
 exports.createRental = async (req, res) => {
   try {
     validateRequestData(req.body);
@@ -122,6 +152,11 @@ exports.createRental = async (req, res) => {
     const { item, owner } = await fetchItemAndOwner(req.body.ItemID);
     const deliveryFee = await calculateDeliveryFee(req.body.DeliveryOption, owner.Address, req.body.DeliveryAddress);
     const totalPrice = item.DailyPrice * rentalPeriod + deliveryFee;
+    ///////////////
+    /////////////
+    console.Console("before discount" +totalPrice);
+    totalPrice=getApplicablePromotion(req.body.StartDate,totalPrice);
+    console.Console("after discount" +totalPrice);
 
     const parsedAmount = req.body.amount != null ? parseFloat(req.body.amount) : totalPrice;
     if (parsedAmount !== totalPrice && req.body.paymentMethod.toLowerCase() !== 'cash') {

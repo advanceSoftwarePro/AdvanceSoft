@@ -13,7 +13,10 @@ const Admin= require('./routes/adminRoutes');
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 const cron = require('node-cron'); // Single import
 
-
+const userRoutes = require('./routes/userRoutes');
+const promotionRoutes = require('./routes/promotionRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+require('./controllers/rewardController'); // Import the cron job setup
 const fs = require('fs');
 require('dotenv').config();
 
@@ -30,6 +33,7 @@ app.use((req, res, next) => {
 });
 
 
+const chartRoutes = require('./routes/chartRoutes');
 // Registering routes
 app.use('/api', authRoutes);
 app.use('/api', categoryRoutes);
@@ -37,11 +41,13 @@ app.use('/api', profileRoutes);
 app.use('/api', deliveryRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
-
-app.use('/admin/users', user);
-app.use('/admin/promotions',Promotion)
-app.use('/admin',Admin);
 app.use('/api/messages', messageRouter);
+app.use('/admin/promotions', promotionRoutes);
+
+
+
+
+
 
 // Sync with the database
 sequelize.sync()
