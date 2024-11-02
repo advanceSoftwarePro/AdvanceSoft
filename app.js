@@ -29,6 +29,7 @@ app.use((req, res, next) => {
   next();
 });
 
+
 // Registering routes
 app.use('/api', authRoutes);
 app.use('/api', categoryRoutes);
