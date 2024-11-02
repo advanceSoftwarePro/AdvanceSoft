@@ -12,3 +12,4 @@ router.delete('/deliveries/:id',verifyUserToken, deliveryController.deleteDelive
 
 
 module.exports = router;
+

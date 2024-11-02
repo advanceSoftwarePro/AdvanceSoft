@@ -6,9 +6,11 @@ const deliveryRoutes = require('./routes/deliveryRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
-const reportRoute = require('./routes/reportRoutes');
+const Promotion=require('./routes/promotionRoutes');const reportRoute = require('./routes/reportRoutes');
 
 const messageRouter = require('./routes/messageRoute'); 
+const user= require('./routes/userRoutes'); 
+const Admin= require('./routes/adminRoutes'); 
 const { cleanExpiredTokens } = require('./services/tokenCleanUp');
 const cron = require('node-cron'); // Single import
 
@@ -30,6 +32,7 @@ app.use((req, res, next) => {
   console.log(`Received request: ${req.method} ${req.originalUrl}`);
   next();
 });
+
 
 const chartRoutes = require('./routes/chartRoutes');
 // Registering routes

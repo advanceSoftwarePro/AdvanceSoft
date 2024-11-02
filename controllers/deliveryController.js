@@ -1,9 +1,11 @@
 const Delivery = require('../models/Delivery');
 const { Op } = require('sequelize');
 const path = require('path');
+const sendEmail = require('../utils/emailService'); // Adjust path as needed
 
 const { sequelize } = require('../utils/database');
 const cron = require('node-cron');
+const Rentals = require('../models/Rental');
 
 async function sendReminderEmails() {
   try {
@@ -43,38 +45,88 @@ async function sendReminderEmails() {
       const [results] = await sequelize.query(query, {
           replacements: { tomorrow, endOfTomorrow }
       });
-
-      // Loop through the fetched results and send emails
       for (const row of results) {
-          const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(row.PickupLocation)}&destination=${encodeURIComponent(row.DeliveryLocation)}`;
-          
-          const subject = `Upcoming Delivery for Rental #${row.RentalID}`;
-          const emailText = `Reminder: Your delivery for rental ${row.RentalName} starts tomorrow. 
-              Pickup Location: ${row.PickupLocation}
-              Delivery Location: ${row.DeliveryLocation}
-              Total Price: ${row.TotalPrice}
-              View Route: ${mapUrl}`;
-          
-          const emailHtml = `<p>Your delivery for rental <strong>${row.RentalName}</strong> starts tomorrow.</p>
-              <p><strong>Pickup Location:</strong> ${row.PickupLocation}</p>
-              <p><strong>Delivery Location:</strong> ${row.DeliveryLocation}</p>
-              <p><strong>Total Price:</strong> ${row.TotalPrice}</p>
-              <p><strong>Map Route:</strong> <a href="${mapUrl}">View Route</a></p>`;
 
-          await sendEmail(row.DriverEmail, subject, emailText, emailHtml);
-          console.log(`Sending email to: ${row.DriverEmail} for Rental ID: ${row.RentalID}`);
-      }
-  } catch (error) {
-      console.error('Error sending reminder emails:', error);
-  }
+        const mapUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(row.PickupLocation)}&destination=${encodeURIComponent(row.DeliveryLocation)}`;
+
+        const completeDeliveryUrl = `http://localhost:3000/api/complete-delivery?driverId=${row.DriverID}&rentalId=${row.RentalID}`;
+
+        const subject = `Upcoming Delivery for Rental #${row.RentalID}`;
+        const emailText = `
+            Reminder: Your delivery for rental ${row.RentalName} starts tomorrow.
+            Pickup Location: ${row.PickupLocation}
+            Delivery Location: ${row.DeliveryLocation}
+            Total Price: ${row.TotalPrice}
+            View Route: ${mapUrl}
+            Complete Delivery: ${completeDeliveryUrl}
+        `;
+
+        const emailHtml = `
+            <p>Your delivery for rental <strong>${row.RentalName}</strong> starts tomorrow.</p>
+            <p><strong>Pickup Location:</strong> ${row.PickupLocation}</p>
+            <p><strong>Delivery Location:</strong> ${row.DeliveryLocation}</p>
+            <p><strong>Total Price:</strong> ${row.TotalPrice}</p>
+            <p><strong>Map Route:</strong> <a href="${mapUrl}">View Route</a></p>
+            <p><strong>Complete Delivery:</strong> <a href="${completeDeliveryUrl}">Mark as Complete</a></p>
+        `;
+
+        await sendEmail.sendEmail(row.DriverEmail, subject, emailText, emailHtml);
+        console.log(`Sending email to: ${row.DriverEmail} for Rental ID: ${row.RentalID}`);
+    }
+} catch (error) {
+    console.error('Error sending reminder emails:', error);
+}
+
 }
 
 // Schedule the cron job
-cron.schedule('0 0 * * *', async () => {
+cron.schedule('* * * * *', async () => {
     console.log('Checking for deliveries starting tomorrow...');
     await sendReminderEmails();
 });
 
+const completeDelivery = async (req, res) => {
+  const { driverId, rentalId } = req.query;
+
+  const transaction = await sequelize.transaction();
+
+  try {
+      // Fetch and update the delivery status
+      const delivery = await Delivery.findOne({
+          where: { DriverID: driverId, RentalID: rentalId },
+          transaction,
+      });
+
+      const Rent = await Rentals.findOne({
+        where: {  RentalID: rentalId },
+        transaction,
+    });
+      if (!delivery) {
+          return res.status(404).json({ error: 'Delivery not found' });
+      }
+
+      await delivery.update({ DeliveryStatus: 'Completed' }, { transaction });
+
+      // Update the payment status in the Rent table
+      await Rent.update(
+          { paymentStatus: 'Paid' },
+          {
+              where: { RentalID: rentalId },
+              transaction,
+          }
+      );
+
+      // Commit the transaction
+      await transaction.commit();
+
+      res.json({ message: 'Delivery and payment status updated successfully!' });
+  } catch (error) {
+      // Rollback the transaction in case of an error
+      await transaction.rollback();
+      console.error('Error completing delivery and updating payment status:', error);
+      res.status(500).json({ error: 'An error occurred while completing the delivery.' });
+  }
+};
 // Function to create a new delivery
 const createDelivery = async (req, res) => {
   try {
@@ -179,4 +231,6 @@ module.exports = {
   getDelivery,
   getDeliveryLocationForCustomer,
   deleteDelivery,
+  completeDelivery
+  
 };
