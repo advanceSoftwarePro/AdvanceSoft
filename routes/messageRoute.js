@@ -15,4 +15,6 @@ router.patch('/:messageId/read', verifyUserToken, messageController.markAsRead);
 // Route to reply to a message
 router.post('/:messageId/reply', verifyUserToken, messageController.replyToMessage);
 
+// Define the route to send a message to admin
+router.post('/sendToAdmin', verifyUserToken,messageController.sendMessageToAdmin);
 module.exports = router;

@@ -41,7 +41,7 @@ const User = sequelize.define(
       defaultValue: 0
     },
     "Role": {
-      type: DataTypes.ENUM('Renter', 'Owner', 'Both'),
+      type: DataTypes.ENUM('Renter', 'Owner', 'Both','Admin'),
       defaultValue: 'Both',
     },
     "VerificationStatus": {

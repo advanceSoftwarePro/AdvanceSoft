@@ -1,8 +1,9 @@
 // controllers/messageController.js
-const User = require('../models/User');
 const Message = require('../models/message');
 
 const { Op } = require('sequelize');
+
+const User = require('../models/user'); // Adjust the path if necessary
 
 exports.sendMessage = async (req, res) => {
     try {
@@ -126,5 +127,38 @@ exports.replyToMessage = async (req, res) => {
     } catch (error) {
         console.error('Error sending reply:', error);
         res.status(500).json({ error: 'An error occurred while sending the reply' });
+    }
+};
+
+
+
+;
+
+exports.sendMessageToAdmin = async (req, res) => {
+    try {
+        const sender_id = req.user.id; // Ensure 'UserID' is available in req.user
+        const { message_text } = req.body; // Extract message text from request body
+
+        // Find a user with the role of 'Admin'
+        const adminUser = await User.findOne({ where: { Role: 'Admin' } });
+        if (!adminUser) {
+            return res.status(404).json({ message: 'Admin user not found' });
+        }
+
+        console.log("sender_id:", sender_id);
+        console.log("adminUser.UserID:", adminUser.UserID);
+        console.log("message_text:", message_text);
+
+        // Create the message record in the database directed to the admin
+        const message = await Message.create({
+            sender_id: sender_id,          // Map to SenderID
+            receiver_id: adminUser.UserID, // Map to ReceiverID as the admin user
+            message_text: message_text,    // Map to MessageContent
+        });
+
+        res.status(201).json({ message: 'Message sent to admin successfully', data: message });
+    } catch (error) {
+        console.error("Error sending message to admin:", error);
+        res.status(500).json({ message: 'Server error', error });
     }
 };

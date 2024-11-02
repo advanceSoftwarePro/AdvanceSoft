@@ -9,6 +9,7 @@ router.get('/parent-categories', verifyUserToken,categoryController.listParentCa
 
 router.get('/categories/:parentId/subcategories',verifyUserToken,categoryController.getSubcategories);
 
+router.post('/Category/create', verifyUserToken, categoryController.createCategory);
 
 
 module.exports = router;

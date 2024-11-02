@@ -49,3 +49,27 @@ exports.getSubcategories = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
+exports.createCategory = async (req, res) => {
+    try {
+        // Check if the user is an admin
+        if (req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Access denied. Admins only.' });
+        }
+
+        const { CategoryName, ParentCategoryID } = req.body; // Get the category details from the request body
+
+        // Create the new category
+        const category = await Category.create({
+            CategoryName,
+            ParentCategoryID
+        });
+
+        res.status(201).json({ message: 'Category created successfully', data: category });
+    } catch (error) {
+        console.error('Error creating category:', error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
