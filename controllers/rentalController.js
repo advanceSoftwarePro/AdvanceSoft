@@ -4,6 +4,7 @@ const Delivery = require('../models/Delivery');
 const DeliveryDriver =require('../models/DeliveryDriver');
 const Distance =require('../services/getDeliveryFeeByArea');
 const { sendEmail } = require('../utils/emailService'); 
+const User =require('../models/User');
 
 const endpointSecret = 'whsec_KPIBlGQlE48XnpSdkPHKRIdu2p2GVMO7'; 
 const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI'); // Replace with your Stripe secret key
@@ -87,7 +88,7 @@ const processPayment = async (paymentMethod, totalPrice) => {
 };
 
 // Create rental and notify the owner by email
-const createRentalAndNotifyOwner = async (req, item, owner, totalPrice, deliveryFee, rentalPeriod, paymentDetails) => {
+const createRentalAndNotifyOwner = async (req,renter, item, owner, totalPrice, discountPrice, deliveryFee, rentalPeriod, paymentDetails) => {
   const { StartDate, EndDate, DeliveryOption, DeliveryAddress, paymentMethod } = req.body;
   const rental = await Rental.create({
     ItemID: item.ItemID,
@@ -103,75 +104,136 @@ const createRentalAndNotifyOwner = async (req, item, owner, totalPrice, delivery
     paymentMethod
   });
 
-  await sendEmail(owner.Email, `New Rental Request for Your Item: ${item.Title}`, 
-    `Hello ${owner.FullName},\n\nYou have received a new rental request for your item "${item.Title}".`);
+  await sendEmail(
+    owner.Email, 
+    `New Rental Request for Your Item: ${item.Title}`, 
+    `Hello ${owner.FullName},\n\n` +
+    `You have received a new rental request for your item "${item.Title}".\n\n` +
+    `Rental Details:\n` +
+    `Renter: ${renter.FullName || 'undefined'} (Email: ${renter.Email || 'undefined'})\n` +
+    `Rental Period: From ${rental.StartDate} to ${rental.EndDate}\n` +
+    `Total Price: $${rental.TotalPrice}\n\n` +
+    `Total Price After Discount: $${discountPrice}\n\n` +
+    `• Delivery Option: ${rental.DeliveryOption}\n` +
+    `• Delivery Address: ${rental.DeliveryAddress}\n\n` +
+    `Please review and approve or reject this request in the system.\n\n` +
+    `Best regards,\n` +
+    `Rental Platform Team`
+);
+
 
   return rental;
 };
 
-//////////
-////////////
+
 const Promotion = require('../models/Promotion');
 const { Op } = require('sequelize');
 
 async function getApplicablePromotion(rentalStartDate, basePrice) {
-    try {
-        // Find active promotions where rentalStartDate is within the promotion date range
-        const promotion = await Promotion.findOne({
-            where: {
-                isActive: true,
-                startDate: { [Op.lte]: rentalStartDate }, // Promotion start date is before or on the rental start date
-                endDate: { [Op.gte]: rentalStartDate }, // Promotion end date is after or on the rental start date
-            },
-        });
+  try {
+      // Find active promotions where rentalStartDate is within the promotion date range
+      const promotion = await Promotion.findOne({
+          where: {
+              isActive: true,
+              startDate: { [Op.lte]: rentalStartDate }, // Promotion start date is before or on the rental start date
+              endDate: { [Op.gte]: rentalStartDate }, // Promotion end date is after or on the rental start date
+          },
+      });
 
-        if (!promotion) {
-            return basePrice; // No promotion found, return 0
-        }
+      if (!promotion) {
+        console.log("jjj");
+          return basePrice; // No promotion found, return the original base price
+      }
 
-        // Calculate the discount amount
-        const discountAmount = (promotion.discountPercentage / 100) * basePrice;
-        return discountAmount; // Return the discount amount
-    } catch (error) {
-        console.error('Error fetching applicable promotion:', error);
-        throw error;
-    }
+      // Calculate the discount amount
+      const discountAmount = (promotion.discountPercentage / 100) * basePrice;
+      const discountedPrice = basePrice - discountAmount; // Calculate the total after applying the discount
+      
+      console.log(`Promotion found: ${promotion.discountPercentage}% off`);
+      console.log(`Original Price: ${basePrice}`);
+      console.log(`Discount Amount: ${discountAmount}`);
+      console.log(`Discounted Price: ${discountedPrice}`);
+      
+      return discountedPrice; // Return the total price after discount
+  } catch (error) {
+      console.error('Error fetching applicable promotion:', error);
+      throw error;
+  }
 }
+
 
 
 
 exports.createRental = async (req, res) => {
   try {
+    // Validate the request data
     validateRequestData(req.body);
 
+    // Check if the user has the right role to create a rental
     if (req.user.role !== 'Renter') {
       return res.status(403).json({ message: 'Only Renters can rent items' });
     }
 
+    // Validate rental dates and get the rental period
     const rentalPeriod = validateDatesAndGetRentalPeriod(req.body.StartDate, req.body.EndDate);
+    
+    // Fetch the item and the owner's details
     const { item, owner } = await fetchItemAndOwner(req.body.ItemID);
+    
+    // Calculate the delivery fee based on the delivery option and addresses
     const deliveryFee = await calculateDeliveryFee(req.body.DeliveryOption, owner.Address, req.body.DeliveryAddress);
-    const totalPrice = item.DailyPrice * rentalPeriod + deliveryFee;
-    ///////////////
-    /////////////
-    console.Console("before discount" +totalPrice);
-    totalPrice=getApplicablePromotion(req.body.StartDate,totalPrice);
-    console.Console("after discount" +totalPrice);
+    
+    // Calculate the total price based on daily price, rental period, and delivery fee
+    let totalPrice = item.DailyPrice * rentalPeriod + deliveryFee;
 
+    console.log("before discount: " + totalPrice);
+    
+    console.log("Request Body:", req.body); // Log request data to see input
+    console.log("Fetching applicable promotion for rental start date:", req.body.StartDate);
+
+     let discountPrice = await getApplicablePromotion(req.body.StartDate, totalPrice);
+     console.log("Total Price after promotion function:", totalPrice);
+
+
+    console.log("after discount: " + discountPrice);
+
+    // Parse the provided amount from the request body
     const parsedAmount = req.body.amount != null ? parseFloat(req.body.amount) : totalPrice;
-    if (parsedAmount !== totalPrice && req.body.paymentMethod.toLowerCase() !== 'cash') {
-      return res.status(400).json({ message: 'The provided amount does not match the total price.', totalPrice, providedAmount: req.body.amount });
+
+    // Check if the provided amount matches the total price, except for cash payments
+    if (parsedAmount !== discountPrice && req.body.paymentMethod.toLowerCase() !== 'cash') {
+      return res.status(400).json({ 
+        message: 'The provided amount does not match the total price.', 
+        totalPrice, 
+        providedAmount: req.body.amount 
+      });
     }
 
+    // Process the payment
     const paymentDetails = await processPayment(req.body.paymentMethod, totalPrice);
-    const rental = await createRentalAndNotifyOwner(req, item, owner, totalPrice, deliveryFee, rentalPeriod, paymentDetails);
+    
+    const renter = await User.findOne({
+      where: { UserID: req.user.id }, // Assuming req.user contains the logged-in user's ID
+      attributes: ['FullName', 'Email'] // Specify the attributes to fetch
+    });
+    // Create the rental and notify the owner
+    const rental = await createRentalAndNotifyOwner(req, renter ,item, owner, totalPrice, discountPrice,deliveryFee, rentalPeriod, paymentDetails);
 
-    res.status(201).json({ message: 'Rental created successfully, owner has been notified', rental });
+    // Send success response
+    res.status(201).json({ 
+      message: 'Rental created successfully, owner has been notified', 
+      rental 
+    });
+    
   } catch (error) {
     console.error('Error creating rental:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };
+
 
 
 const authorizeUser = (user) => {
@@ -242,7 +304,7 @@ console.log(sessionId);
       await sendEmail(
         renterEmail,
         'Deposit Payment Required',
-        'Please complete the security deposit payment to proceed with your rental.', // Plain text version
+        'Your Renta Request Has been accepted Please complete the security deposit payment to proceed with your rental.', // Plain text version
         `
         <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
           <p>Hello ${rental.renterName || 'Valued Customer'},</p>
@@ -372,10 +434,18 @@ exports.updateRentalStatus = async (req, res) => {
     const rental = await fetchRentalById(id);
 
     // Handle Payment Link Creation for Cash Payments
+    if (status==='Approved' && rental.paymentMethod === 'cash'){
     const paymentLinkResponse = await createPaymentLinkAndNotifyRenter(rental);
     if (paymentLinkResponse) return res.status(200).json(paymentLinkResponse);
+    }
 
-    // Handle Delivery Assignment if needed
+    const renter = await User.findOne({
+      where: { UserID: req.user.id }, 
+      attributes: ['FullName', 'Email'] 
+    });
+
+  
+  
     let deliveryResponse = null;
     if (rental.DeliveryOption === 'Delivery') {
       const deliveryCoords = await Distance.geocodeAddress(rental.DeliveryAddress);
@@ -384,10 +454,33 @@ exports.updateRentalStatus = async (req, res) => {
       }
 
       deliveryResponse = await handleDeliveryAssignment(rental, deliveryCoords, status);
-    } else {
+    } 
+    else {
       // Update Status for non-delivery rentals
       await updateRentalStatus(rental, status);
     }
+
+    const item = await Item.findOne({
+      where: { ItemID: rental.ItemID }, // Assuming `itemId` is the correct foreign key in rental
+      attributes: ['Title'] // Fetch only the Title attribute
+    });
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+    
+    await sendEmail(
+      renter.Email, 
+      `Your Rental Application Status for ${item.Title}`, 
+      `Hello ${renter.FullName},\n\n` +
+      `We would like to inform you about the status of your rental application for the item "${item.Title}".\n\n` +
+      `Status: ${status}\n\n` + // 'Approved' or 'Rejected'
+      (status === 'Approved' ? 
+          `Congratulations! Your application has been approved. You can now proceed with the next steps.\n\n` : 
+          `We regret to inform you that your application has been rejected. Thank you for your interest, and we encourage you to apply again in the future.\n\n`) +
+      `If you have any questions or need assistance, please feel free to reach out to us.\n\n` +
+      `Best regards,\n` +
+      `Rental Platform Team`
+  );
 
     res.status(200).json({
       message: 'Rental status updated successfully',

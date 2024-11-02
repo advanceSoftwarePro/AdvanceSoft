@@ -38,6 +38,8 @@ const Promotion = sequelize.define('Promotion', {
   },
 }, {
   tableName: 'Promotions',
+  schema: 'advance',
+
   timestamps: false,
 });
 
