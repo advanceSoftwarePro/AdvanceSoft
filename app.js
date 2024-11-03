@@ -3,11 +3,11 @@ const bodyParser = require('body-parser');
 const sequelize = require('./config/database');
 const cron = require('node-cron');
 const cors = require('cors');
-const { User } = require('./models/user');
+const  User  = require('./models/user');
 const { Op } = require('sequelize');
 require('dotenv').config();
 
-const Promotion=require('./routes/promotionRoutes');
+
 const reportRoute = require('./routes/reportRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
@@ -17,10 +17,10 @@ const itemRoutes = require('./routes/itemRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
 const Promotion = require('./routes/promotionRoutes');
 const messageRouter = require('./routes/messageRoute');
-const user = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes');
 const Admin = require('./routes/adminRoutes');
-const ratingRoutes = require('./services/ratingService');
-const reviewRoutes = require('./routes/reviewRoutes');
+const ratingRouter = require('./routes/ratingRoute');
+const reviewRouter = require('./routes/reviewRoute');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const accountRoutes = require('./routes/accountRoutes');
@@ -37,6 +37,7 @@ app.use(cors());
 // Logging middleware for incoming requests
 app.use((req, res, next) => {
   console.log(`Received request: ${req.method} ${req.originalUrl}`);
+
   next();
 });
 
@@ -49,13 +50,13 @@ app.use('/api', reportRoute);
 app.use('/api/items', itemRoutes);
 app.use('/api/rentals', rentalRoutes);
 app.use('/api/messages', messageRouter);
-app.use('/admin/promotions', Promotion);
-app.use('/rate', ratingRoutes);
-app.use('/api/reviews', reviewRoutes);
+
+app.use('/api/ratings', ratingRouter);
+app.use('/api/reviews', reviewRouter);
 app.use('/api/favorites', favoriteRoutes);
-app.use('/api/wishlists', wishlistRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 app.use('/', accountRoutes);
-app.use('/admin', adminRoutes);
+app.use('/admin', Admin);
 app.use('/admin/users', userRoutes);
 
 
@@ -70,6 +71,7 @@ sequelize.sync()
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
 
+
       // Schedule a cleanup of expired tokens every 24 hours
       cron.schedule('0 0 * * *', () => { // Runs daily at midnight
         console.log('Cleaning expired tokens...');
@@ -79,6 +81,7 @@ sequelize.sync()
       // Schedule tasks, e.g., deleting users every minute
       cron.schedule('* * * * *', async () => { // Runs every minute
         try {
+          console.log("hi deactive");
           const now = new Date();
           const cutoffTime = new Date(now.getTime() - 2 * 60 * 1000);
 
@@ -101,6 +104,7 @@ sequelize.sync()
           });
 
           console.log(`${deletedUsers} user(s) deleted from the database.`);
+
         } catch (error) {
           console.error('Error deleting old deactivated accounts:', error);
         }
@@ -128,51 +132,6 @@ console.log('Registered routes:');
 app._router.stack.forEach((middleware) => {
   if (middleware.route) {
     console.log(`${middleware.route.path} [${middleware.route.methods}]`);
+
   }
 });
-
-
-/*
-cron.schedule('0 0 * * *', async () => { // Run daily at midnight
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-  try {
-    await User.destroy({
-      where: {
-        AccountStatus: 'Deactivated',
-        DeactivationDate: { [Op.lt]: oneMonthAgo }
-      }
-    });
-    console.log('Deleted expired deactivated accounts');
-  } catch (error) {
-    console.error('Failed to delete expired accounts:', error);
-  }
-});
-
-*/
-
-// This cron job runs every minute
-/*cron.schedule('* * * * *', async () => {
-  try {
-    // Get the current time
-    const now = new Date();
-
-    // Calculate the cutoff time (2 minutes ago)
-    const cutoffTime = new Date(now.getTime() - 2 * 60 * 1000);
-
-    // Delete users whose DeactivationDate is less than or equal to cutoffTime
-    const deletedUsers = await User.destroy({
-      where: {
-        DeactivationDate: {
-          [Op.lte]: cutoffTime // Sequelize operator for less than or equal to
-        }
-      }
-    });
-
-    console.log(`${deletedUsers} user(s) deleted from the database.`);
-  } catch (error) {
-    console.error('Error deleting old deactivated accounts:', error);
-  }
-});
-*/
