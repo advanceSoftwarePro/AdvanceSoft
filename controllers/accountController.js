@@ -2,7 +2,7 @@ const User = require('../models/user'); // Ensure the import path is correct
 
 exports.deactivateAccount = async (req, res) => {
   try {
-    const { user_id } = req.body;
+    const user_id = req.user.id; // Get user ID from the authenticated request
 
     console.log(`Deactivating account for user ID: ${user_id}`);
 
@@ -18,25 +18,23 @@ exports.deactivateAccount = async (req, res) => {
     }
 
     // Log the user details before updating
-    if (user) {
-        user.AccountStatus = 'Deactivated';
-        user.DeactivationDate = new Date(); // Set current date as deactivation date
-        await user.save();
-    
-        // Schedule account deletion in 2 minutes (120 seconds)
-        setTimeout(async () => {
-          const deletedUser = await User.findByPk(userId);
-          if (deletedUser && deletedUser.AccountStatus === 'Deactivated') {
-            await deletedUser.destroy(); // Delete user account
-            console.log(`User with ID ${userId} has been deleted after 2 minutes of deactivation.`);
-          }
-        }, 120000); // 2 minutes in milliseconds
+    user.AccountStatus = 'Deactivated';
+    user.DeactivationDate = new Date(); // Set current date as deactivation date
+    await user.save();
+
+    // Schedule account deletion in 2 minutes (120 seconds)
+    setTimeout(async () => {
+      const deletedUser = await User.findByPk(user_id); // Use user_id here
+      if (deletedUser && deletedUser.AccountStatus === 'Deactivated') {
+        await deletedUser.destroy(); // Delete user account
+        console.log(`User with ID ${user_id} has been deleted after 2 minutes of deactivation.`);
       }
+    }, 120000); // 2 minutes in milliseconds
 
     res.status(200).json({ message: 'Account deactivated successfully.' });
   } catch (error) {
     console.error('Error while deactivating account:', error);
-    res.status(500).json({ error: 'Failed to deactivate account' });
+    res.status(500).json({ error: 'Failed to deactivate account', details: error.message }); // Include error details
   }
 };
 
