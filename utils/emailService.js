@@ -1,40 +1,36 @@
 
 
 const nodemailer = require('nodemailer');
-
-// Create a reusable transporter object using the default SMTP transport
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT || 587, // Default to port 587 if not set
-  secure: process.env.SMTP_PORT == 465, // true for port 465 (SSL), false for other ports (e.g., 587)
+  port: process.env.SMTP_PORT || 587, 
+  secure: process.env.SMTP_PORT == 465, 
   auth: {
-    user: process.env.SMTP_USER, // SMTP username from environment
-    pass: process.env.SMTP_PASS, // SMTP password from environment
+    user: process.env.SMTP_USER, 
+    pass: process.env.SMTP_PASS, 
   },
   tls: {
-    rejectUnauthorized: false, // Skip SSL verification for self-signed certificates (useful in development)
+    rejectUnauthorized: false, 
   },
 });
 
-// Send email function
 exports.sendEmail = async (to, subject, text, html) => {
   try {
-    console.log('Sending email to:', to); // Log recipient email
+    console.log('Sending email to:', to); 
   console.log('Subject:', subject);
   console.log('Text:', text);
   console.log('HTML:', html);
   
     const info = await transporter.sendMail({
-      from: '"Rental Platform" <no-reply@rentalplatform.com>', // Sender address
-      to: to, // Receiver's email
-      subject: subject, // Subject line
-      text: text, // Plain text body
-      html: html, // HTML body
+      from: '"Rental Platform" <no-reply@rentalplatform.com>', 
+      to: to, 
+      subject: subject, 
+      text: text, 
+      html: html, 
     });
 
     console.log('Message sent: %s', info.messageId);
   } catch (error) {
     console.error('Error sending email:', error.message);
-    // Optionally, add more detailed logging or handle retry logic here
   }
 };

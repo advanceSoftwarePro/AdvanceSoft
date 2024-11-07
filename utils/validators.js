@@ -1,4 +1,3 @@
-// utils/validators.js
 const Joi = require('joi');
 const { body, validationResult } = require('express-validator');
 const path = require('path');

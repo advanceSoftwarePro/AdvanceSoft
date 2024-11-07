@@ -1,4 +1,4 @@
-// In AdminPanel.js or any admin dashboard component
+
 import StatisticsChart from './StatisticsChart';
 
 function AdminPanel() {
