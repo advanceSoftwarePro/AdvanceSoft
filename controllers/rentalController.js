@@ -101,9 +101,9 @@ const createRentalAndNotifyOwner = async (req,renter, item, owner, totalPrice, d
     paymentMethod
   });
 
-  await sendEmail(
-    owner.Email, 
-    `New Rental Request for Your Item: ${item.Title}`, 
+ await sendEmail(
+    owner.Email,
+    `📬 New Rental Request for Your Item: ${item.Title}`,
     `Hello ${owner.FullName},\n\n` +
     `You have received a new rental request for your item "${item.Title}".\n\n` +
     `Rental Details:\n` +
@@ -115,9 +115,34 @@ const createRentalAndNotifyOwner = async (req,renter, item, owner, totalPrice, d
     `• Delivery Address: ${rental.DeliveryAddress}\n\n` +
     `Please review and approve or reject this request in the system.\n\n` +
     `Best regards,\n` +
-    `Rental Platform Team`
+    `Rental Platform Team`,
+  
+    `
+    <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+      <h2 style="color: #007bff; text-align: center;">
+        📬 New Rental Request for Your Item
+      </h2>
+      <p>Hello <strong>${owner.FullName}</strong>,</p>
+      <p>You have received a new rental request for your item "<strong>${item.Title}</strong>".</p>
+      <h3 style="color: #007bff; margin-top: 20px;">Rental Details</h3>
+      <ul style="list-style: none; padding: 0;">
+        <li>👤 <strong>Renter:</strong> ${renter.FullName || 'undefined'} (<a href="mailto:${renter.Email}" style="color: #007bff; text-decoration: none;">${renter.Email || 'undefined'}</a>)</li>
+        <li>📅 <strong>Rental Period:</strong> From ${rental.StartDate} to ${rental.EndDate}</li>
+        <li>💰 <strong>Total Price:</strong> $${rental.TotalPrice}</li>
+        <li>💸 <strong>Price After Discount:</strong> $${discountPrice}</li>
+        <li>🚚 <strong>Delivery Option:</strong> ${rental.DeliveryOption}</li>
+        <li>🏠 <strong>Delivery Address:</strong> ${rental.DeliveryAddress}</li>
+      </ul>
+      <p>Please review and approve or reject this request in the system.</p>
+      <p style="font-weight: bold;">Best regards,</p>
+      <p>Rental Platform Team</p>
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+      <p style="font-size: 14px; color: #888; text-align: center;">
+        📧 This is an automated message from the Rental Platform. Please do not reply directly to this email.
+      </p>
+    </div>
+    `
 );
-
 
   return rental;
 };
@@ -271,37 +296,40 @@ console.log(sessionId);
 
       console.log('Renter Email:', renterEmail);
       
-      await sendEmail(
+       await sendEmail(
         renterEmail,
-        'Deposit Payment Required',
-        'Your Renta Request Has been accepted Please complete the security deposit payment to proceed with your rental.', 
+        '💰 Deposit Payment Required for Your Rental Request',
+        'Your Rental Request Has been accepted! Please complete the security deposit payment to proceed with your rental.', // Plain text version
         `
-        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+          <h2 style="color: #007bff; text-align: center;">🎉 Your Rental Request is Accepted! 🎉</h2>
           <p>Hello ${rental.renterName || 'Valued Customer'},</p>
-          <p>We’re excited to help you with your rental! To proceed, please complete the security deposit payment by clicking the link below:</p>
-          <p style="text-align: center;">
+          <p>We’re excited to help you with your rental! To secure your booking, please complete the security deposit payment by clicking the button below:</p>
+          <p style="text-align: center; margin: 20px 0;">
             <a href="${paymentLink.url}" style="
               display: inline-block;
               background-color: #007bff;
               color: #ffffff;
-              padding: 10px 20px;
+              padding: 12px 24px;
               text-decoration: none;
               font-weight: bold;
-              border-radius: 5px;
-            ">Pay Deposit</a>
+              font-size: 16px;
+              border-radius: 6px;
+              box-shadow: 0 4px 6px rgba(0, 123, 255, 0.3);
+            ">💳 Pay Deposit</a>
           </p>
-          <p>If you have any questions, feel free to reach out to our support team.</p>
-          <p>Thank you for choosing us, and we look forward to assisting you further.</p>
-          <p>Best regards,</p>
-          <p>Your Rental Team</p>
+          <p>If you have any questions or need assistance, feel free to reach out to our support team — we’re here to help!</p>
+          <p>Thank you for choosing us, and we look forward to a smooth and seamless rental experience.</p>
+          <p style="font-weight: bold;">Best regards,</p>
+          <p>Your Rental Team 🏠</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-          <small style="color: #888;">This email has been checked for viruses by Avast antivirus software.</small><br>
-          <small style="color: #888;">
-            <a href="https://www.avast.com" style="color: #888; text-decoration: none;">www.avast.com</a>
-          </small>
+          <p style="font-size: 14px; color: #888; text-align: center;">
+            This email has been scanned for viruses by Avast antivirus software. 🛡️<br>
+            <a href="https://www.avast.com" style="color: #007bff; text-decoration: none;">www.avast.com</a>
+          </p>
         </div>
         `
-      );
+    );
       
       
       
@@ -431,19 +459,46 @@ exports.updateRentalStatus = async (req, res) => {
       return res.status(404).json({ message: 'Item not found' });
     }
     
-    await sendEmail(
-      renter.Email, 
-      `Your Rental Application Status for ${item.Title}`, 
+  await sendEmail(
+      renter.Email,
+      `📢 Your Rental Application Status for ${item.Title}`,
       `Hello ${renter.FullName},\n\n` +
       `We would like to inform you about the status of your rental application for the item "${item.Title}".\n\n` +
       `Status: ${status}\n\n` +
       (status === 'Approved' ? 
-          `Congratulations! Your application has been approved. You can now proceed with the next steps.\n\n` : 
-          `We regret to inform you that your application has been rejected. Thank you for your interest, and we encourage you to apply again in the future.\n\n`) +
+          `🎉 Congratulations! Your application has been approved. You can now proceed with the next steps.\n\n` : 
+          `⚠️ We regret to inform you that your application has been rejected. Thank you for your interest, and we encourage you to apply again in the future.\n\n`) +
       `If you have any questions or need assistance, please feel free to reach out to us.\n\n` +
       `Best regards,\n` +
-      `Rental Platform Team`
+      `Rental Platform Team`,
+      // HTML version
+      `
+      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: ${status === 'Approved' ? '#28a745' : '#dc3545'}; text-align: center;">
+          ${status === 'Approved' ? '🎉 Approved!' : '⚠️ Rejected'}
+        </h2>
+        <p>Hello <strong>${renter.FullName}</strong>,</p>
+        <p>We would like to inform you about the status of your rental application for the item "<strong>${item.Title}</strong>".</p>
+        <p><strong>Status:</strong> <span style="color: ${status === 'Approved' ? '#28a745' : '#dc3545'};">${status}</span></p>
+        ${
+          status === 'Approved' 
+          ? `<p>🎉 Congratulations! Your application has been approved. You can now proceed with the next steps to secure your rental.</p>`
+          : `<p>⚠️ We regret to inform you that your application has been rejected. Thank you for your interest, and we encourage you to apply again in the future.</p>`
+        }
+        <p>If you have any questions or need assistance, please feel free to reach out to us.</p>
+        <p style="font-weight: bold;">Best regards,</p>
+        <p>Rental Platform Team</p>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+        <p style="font-size: 14px; color: #888; text-align: center;">
+          📧 This is an automated message from the Rental Platform. Please do not reply directly to this email.
+        </p>
+      </div>
+      `
   );
+  
+  console.log(`Email sent to: ${renter.Email} regarding rental status for: ${item.Title}`);
+  
+
 
     res.status(200).json({
       message: 'Rental status updated successfully',
