@@ -146,6 +146,16 @@ exports.getItemDetails = async (req, res) => {
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
+      
+    const ratingData = await Review.findOne({
+      where: { item_id: itemId },
+      attributes: [
+        [sequelize.fn('AVG', sequelize.col('rating')), 'averageRating']
+      ]
+    });
+
+    const averageRating = ratingData ? parseFloat(ratingData.get('averageRating')).toFixed(1) : null;
+
     return res.status(200).json({
       Title: item.Title,
       Description: item.Description,
@@ -155,6 +165,8 @@ exports.getItemDetails = async (req, res) => {
       DeliveryOptions: item.DeliveryOptions,
       AvailabilityStatus: item.AvailabilityStatus,
       Images: item.ImageURL, 
+    AverageRating: averageRating ? averageRating : 'No ratings yet'
+
     });
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error });
