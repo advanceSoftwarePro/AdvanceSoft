@@ -64,18 +64,18 @@ const User = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
-    deactivated_at: {  // New column for deactivation tracking
+    deactivated_at: { 
       type: DataTypes.DATE,
       allowNull: true,
       defaultValue: null,
     },
     "AccountStatus": {
-      type: DataTypes.ENUM('Active', 'Deactivated'), // Make sure this is included
-      defaultValue: 'Active', // Default status is active
+      type: DataTypes.ENUM('Active', 'Deactivated'), 
+      defaultValue: 'Active', 
     },
     "DeactivationDate": {
-      type: DataTypes.DATE, // Make sure this is included
-      allowNull: true, // It's okay to be null initially
+      type: DataTypes.DATE, 
+      allowNull: true, 
     },
   },
   {

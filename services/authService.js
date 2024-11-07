@@ -1,4 +1,4 @@
-// services/authService.js
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -57,7 +57,7 @@ exports.sendVerificationEmail = async (email, token) => {
       pass: process.env.SMTP_PASS,
     },
     tls: {
-      rejectUnauthorized: false, // Allow self-signed certificates
+      rejectUnauthorized: false, 
     },
   });
 

@@ -1,25 +1,23 @@
 const express = require('express');
 const { Pool } = require('pg');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config(); 
 
 const router = express.Router();
 
-// Database connection using connection pool
 const pool = new Pool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: 5432, // Default PostgreSQL port
+    port: 5432, 
 });
 
-// Rating route - Create a new rating
 router.post('/', async (req, res) => {
-    const { ratedUserId, rating } = req.body; // Get ratedUserId and rating from body
-    const raterId = req.user.id; // Get the raterId from the token
+    const { ratedUserId, rating } = req.body; 
+    const raterId = req.user.id; 
 
     try {
-        // Check if the user has already rated this user
+
         const existingRating = await pool.query(
             `SELECT * FROM advance.Ratings WHERE rater_id = $1 AND rated_user_id = $2`,
             [raterId, ratedUserId]
@@ -29,7 +27,6 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'You can only rate a user once.' });
         }
 
-        // Insert the new rating
         const result = await pool.query(
             `INSERT INTO advance.Ratings (rater_id, rated_user_id, rating) VALUES ($1, $2, $3) RETURNING *`,
             [raterId, ratedUserId, rating]
@@ -42,9 +39,9 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Get ratings for the logged-in user
+
 router.get('/', async (req, res) => {
-    const userId = req.user.id; // Get userId from token
+    const userId = req.user.id; 
 
     try {
         const result = await pool.query(
@@ -58,10 +55,10 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Update a rating
+
 router.put('/:rate_id', async (req, res) => {
-    const { rating } = req.body; // Get new rating from body
-    const rateId = req.params.rate_id; // Get rate ID from URL
+    const { rating } = req.body;
+    const rateId = req.params.rate_id; 
 
     try {
         const result = await pool.query(
@@ -80,9 +77,9 @@ router.put('/:rate_id', async (req, res) => {
     }
 });
 
-// Delete a rating
+
 router.delete('/:rate_id', async (req, res) => {
-    const rateId = req.params.rate_id; // Get rate ID from URL
+    const rateId = req.params.rate_id; 
 
     try {
         const deletedCount = await pool.query(

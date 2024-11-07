@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');  // Import sequelize instance
+const sequelize = require('../config/database'); 
 
 const Item = sequelize.define(
   'Item',
@@ -74,6 +74,4 @@ const Item = sequelize.define(
 Item.addHook('beforeUpdate', (item) => {
   item.UpdatedAt = new Date();
 });
-
-// Export the Item model first
 module.exports = Item;

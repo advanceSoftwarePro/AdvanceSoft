@@ -1,7 +1,5 @@
 const rewardService = require('../services/rewardService');
 const cron = require('node-cron');
-
-// Schedule to run on the 1st day of every two months
 cron.schedule('0 0 * * *', async () => {
     try {
     await rewardService.identifyAndRewardBestUsers();

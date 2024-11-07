@@ -11,7 +11,7 @@ const Favorite = sequelize.define('Favorite', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users', // Adjust if your table name is different
+            model: 'Users', 
             key: 'UserID',
         },
     },

@@ -1,11 +1,8 @@
-// routes/authRoutes.js
 const express = require('express');
 const authController = require('../controllers/authController');
 const { validateEmail, handleValidationErrors } = require('../utils/validators');
 const { verifyUserToken } = require('../utils/authMiddleware');
 const router = express.Router();
-
-// Registration route
 router.post('/register', authController.register);
 router.get('/verify/:token', authController.verifyEmail);
 

@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // Adjust the path as necessary
-
+const sequelize = require('../config/database'); 
 const DeliveryDriver = sequelize.define('DeliveryDriver', {
   DriverID: {
     type: DataTypes.INTEGER,
@@ -29,12 +28,11 @@ const DeliveryDriver = sequelize.define('DeliveryDriver', {
   },
  
 }, {
-  timestamps: false, // Disable automatic timestamp fields
+  timestamps: false, 
   schema: 'advance',
   tableName: 'DeliveryDrivers',
 });
 
-// Define hooks to automatically update the UpdatedAt field
 DeliveryDriver.addHook('beforeUpdate', (driver) => {
   driver.UpdatedAt = new Date();
 });
@@ -42,7 +40,7 @@ DeliveryDriver.addHook('beforeUpdate', (driver) => {
 DeliveryDriver.associate = (models) => {
   DeliveryDriver.hasMany(models.Delivery, {
     foreignKey: 'DriverID',
-    as: 'deliveries', // Ensure this matches your query
+    as: 'deliveries', 
   });
 };
 module.exports = DeliveryDriver;

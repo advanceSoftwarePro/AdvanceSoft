@@ -1,7 +1,7 @@
 const Delivery = require('../models/Delivery');
 const { Op } = require('sequelize');
 const path = require('path');
-const sendEmail = require('../utils/emailService'); // Adjust path as needed
+const sendEmail = require('../utils/emailService'); 
 
 const { sequelize } = require('../utils/database');
 const cron = require('node-cron');
@@ -16,7 +16,6 @@ async function sendReminderEmails() {
       const endOfTomorrow = new Date(tomorrow);
       endOfTomorrow.setHours(23, 59, 59, 999);
 
-      // SQL query to fetch deliveries scheduled for tomorrow
       const query = `
           SELECT 
               d."DriverID",
@@ -41,7 +40,6 @@ async function sendReminderEmails() {
               AND r."DeliveryOption" = 'Delivery';
       `;
 
-      // Execute the SQL query
       const [results] = await sequelize.query(query, {
           replacements: { tomorrow, endOfTomorrow }
       });
@@ -79,7 +77,6 @@ async function sendReminderEmails() {
 
 }
 
-// Schedule the cron job
 cron.schedule('* * * * *', async () => {
     console.log('Checking for deliveries starting tomorrow...');
     await sendReminderEmails();
@@ -91,7 +88,6 @@ const completeDelivery = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-      // Fetch and update the delivery status
       const delivery = await Delivery.findOne({
           where: { DriverID: driverId, RentalID: rentalId },
           transaction,
@@ -107,7 +103,6 @@ const completeDelivery = async (req, res) => {
 
       await delivery.update({ DeliveryStatus: 'Completed' }, { transaction });
 
-      // Update the payment status in the Rent table
       await Rent.update(
           { paymentStatus: 'Paid' },
           {
@@ -116,29 +111,25 @@ const completeDelivery = async (req, res) => {
           }
       );
 
-      // Commit the transaction
       await transaction.commit();
 
       res.json({ message: 'Delivery and payment status updated successfully!' });
   } catch (error) {
-      // Rollback the transaction in case of an error
       await transaction.rollback();
       console.error('Error completing delivery and updating payment status:', error);
       res.status(500).json({ error: 'An error occurred while completing the delivery.' });
   }
 };
-// Function to create a new delivery
+
 const createDelivery = async (req, res) => {
   try {
     const delivery = await Delivery.create(req.body);
-    //Delivery.save();
     return res.status(201).json(delivery);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 };
 
-// Function to get delivery details
 const getDelivery = async (req, res) => {
   try {
     const delivery = await Delivery.findByPk(req.params.id);
@@ -149,35 +140,6 @@ const getDelivery = async (req, res) => {
   }
 };
 
-// Function to update delivery location
-
-// Function to update the current location of a delivery
-/*const updateDeliveryLocation = async (req, res) => {
-  const { DeliveryID, CurrentLatitude, CurrentLongitude } = req.body;
-
-  try {
-    const delivery = await Delivery.findByPk(DeliveryID);
-    if (!delivery) {
-      return res.status(404).json({ error: "Delivery not found" });
-    }
-
-    // Update the location fields
-    delivery.CurrentLatitude = CurrentLatitude;
-    delivery.CurrentLongitude = CurrentLongitude;
-
-    await delivery.save();
-    return res.status(200).json({
-      message: "Location updated successfully",
-      delivery,
-    });
-  } catch (error) {
-    console.error("Error updating delivery location:", error);
-    return res.status(500).json({ error: error.message });
-  }
-};*/
-
-
-// Function to delete a delivery
 const deleteDelivery = async (req, res) => {
   try {
     const delivery = await Delivery.findByPk(req.params.id);
@@ -192,30 +154,26 @@ const deleteDelivery = async (req, res) => {
 
 const getDeliveryLocationForCustomer = async (req, res) => {
   try {
-    // Check if the user is a customer
     if (req.user.role !== 'Renter') {
       return res.status(403).json({ message: 'Access denied. Only customers can view delivery locations.' });
     }
 
     const deliveryID = req.params.id;
 
-    // Find the delivery by ID
     const delivery = await Delivery.findByPk(deliveryID);
 
     if (!delivery) {
       return res.status(404).json({ message: 'Delivery not found' });
     }
 
-    // Generate the Google Maps link
     const googleMapsLink = `https://www.google.com/maps/dir//${delivery.CurrentLatitude},${delivery.CurrentLongitude}/`;
 
-    // Respond with the delivery location details
     return res.status(200).json({
       PickupLocation: delivery.PickupLocation,
       DeliveryLocation: delivery.DeliveryLocation,
       CurrentLatitude: delivery.CurrentLatitude,
       CurrentLongitude: delivery.CurrentLongitude,
-      GoogleMapsLink: googleMapsLink,  // Include the Google Maps link
+      GoogleMapsLink: googleMapsLink,  
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });

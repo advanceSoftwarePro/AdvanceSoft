@@ -53,14 +53,11 @@ exports.getSubcategories = async (req, res) => {
 
 exports.createCategory = async (req, res) => {
     try {
-        // Check if the user is an admin
         if (req.user.role !== 'Admin') {
             return res.status(403).json({ message: 'Access denied. Admins only.' });
         }
 
-        const { CategoryName, ParentCategoryID } = req.body; // Get the category details from the request body
-
-        // Create the new category
+        const { CategoryName, ParentCategoryID } = req.body;
         const category = await Category.create({
             CategoryName,
             ParentCategoryID

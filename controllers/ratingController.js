@@ -1,34 +1,103 @@
 const { Pool } = require('pg');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config(); 
 
-// Database connection using connection pool
 const pool = new Pool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: 5432, // Default PostgreSQL port
+    port: 5432, 
 });
 
-// Create a new rating
+async function updateUserRating(userId, newRating) {
+    try {
+        const userResult = await pool.query(`
+            SELECT * FROM advance."Users" WHERE "UserID" = $1;
+        `, [userId]);
+
+        if (userResult.rows.length === 0) {
+            console.log('User not found.');
+            return;
+        }
+
+        const user = userResult.rows[0];
+        const totalRatings = user.numberOfRatings;
+        const currentRating = user.Rating;
+
+        const newTotalRating = ((currentRating * totalRatings) + newRating) / (totalRatings + 1);
+
+        await pool.query(`
+            UPDATE advance."Users" 
+            SET "Rating" = $1, "numberOfRatings" = $2 
+            WHERE "UserID" = $3;
+        `, [newTotalRating, totalRatings + 1, userId]);
+
+        console.log(`User's new rating: ${newTotalRating}`);
+
+        if (newTotalRating < 2.5 && newTotalRating > 1.5) {
+            console.log(`Sending notification to user with email ${user.Email}`);
+            await sendEmail(
+                user.Email,
+                '🚨 Important: Your Rating Has Dropped Below 2.5',
+                `Hello ${user.FullName},\n\nWe noticed that your rating has dropped below 2.5. This could impact your ability to maintain your account on our platform. Please take a moment to review and improve your service to ensure a positive experience for all users.\n\nThank you,\nRental Platform Team`,
+                `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #d9534f;">🚨 Important: Your Rating Has Dropped Below 2.5</h2>
+                    <p>Hello <strong>${user.FullName}</strong>,</p>
+                    <p>We noticed that your rating has dropped below <strong>2.5</strong>. This could impact your ability to maintain your account on our platform.</p>
+                    <p>Please take a moment to review and improve your service to ensure a positive experience for all users.</p>
+                    <p>Thank you,<br>Rental Platform Team</p>
+                    <hr style="border: none; border-top: 1px solid #eee;" />
+                    <p style="font-size: 0.9em; color: #666;">If you have any questions, please contact our support team.</p>
+                </div>
+                `
+            );
+        }
+
+        if (newTotalRating <= 1.5) {
+            console.log(`Deleting user with UserID ${user.UserID} due to low rating.`);
+            await sendEmail(
+                user.Email,
+                '⚠️ Important: Account Deletion Due to Low Rating',
+                `Hello ${user.FullName},\n\nWe regret to inform you that your account has been deleted due to a low rating of ${newTotalRating}. Unfortunately, this rating did not meet the platform's required standards for active accounts.\n\nIf you believe this action was taken in error, please contact our support team.\n\nThank you for your understanding,\nRental Platform Team`,
+                `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #d9534f;">⚠️ Important: Account Deletion Due to Low Rating</h2>
+                    <p>Hello <strong>${user.FullName}</strong>,</p>
+                    <p>We regret to inform you that your account has been deleted due to a low rating of <strong>${newTotalRating}</strong>. Unfortunately, this rating did not meet the platform's required standards for active accounts.</p>
+                    <p>If you believe this action was taken in error, please contact our support team for further assistance.</p>
+                    <p>Thank you for your understanding,<br>Rental Platform Team</p>
+                    <hr style="border: none; border-top: 1px solid #eee;" />
+                    <p style="font-size: 0.9em; color: #666;">For further inquiries, please reach out to our support team.</p>
+                </div>
+                `
+            );
+            await pool.query(`DELETE FROM advance."Users" WHERE "UserID" = $1;`, [userId]);
+        }
+
+    } catch (error) {
+        console.error('Error updating user rating:', error);
+    }
+}
+
 exports.createRating = async (req, res) => {
     const { ratedUserId, rating } = req.body;
-    const raterId = req.user.id; // Get the rater ID from the authenticated user
+    const raterId = req.user.id; 
 
     if (!ratedUserId) {
         return res.status(400).json({ message: 'Rated user ID is required.' });
     }
-    if (rating === undefined) { // Explicit check for undefined to allow 0 or falsy values
+    if (rating === undefined) { 
         return res.status(400).json({ message: 'Rating value is required.' });
     }
 
 
-    // Check if the user is trying to rate themselves
+    
     if (raterId === ratedUserId) {
         return res.status(400).json({ message: 'You cannot rate yourself.' });
     }
 
-    // Validate rating value
+    
     if (rating < 1 || rating > 5) {
         return res.status(400).json({ message: 'Rating must be between 1 and 5.' });
     }
@@ -45,7 +114,7 @@ exports.createRating = async (req, res) => {
     `;
 
     try {
-        // Check if the rating already exists
+        
         const checkResult = await pool.query(sqlCheck, [raterId, ratedUserId]);
 
         if (checkResult.rows.length > 0) {
@@ -53,6 +122,7 @@ exports.createRating = async (req, res) => {
         }
 
         const insertResult = await pool.query(sqlInsert, [raterId, ratedUserId, rating]);
+        await updateUserRating(ratedUserId, rating);
         res.status(201).json({ message: 'Rating added successfully', result: insertResult.rows[0] });
     } catch (err) {
         console.error('Error adding rating:', err);
@@ -60,36 +130,34 @@ exports.createRating = async (req, res) => {
     }
 };
 
-// Get ratings for a specific user
-// Get ratings for a specific user
+
 exports.getRatingsByUserId = async (req, res) => {
     const ratedUserId = parseInt(req.params.userId, 10);
     
-    // Validate if userId is a valid integer
+    
     if (isNaN(ratedUserId)) {
         return res.status(400).json({ message: 'Invalid userId format.' });
     }
 
-    // SQL query to check if the user exists
+    
     const sqlCheckUser = `
         SELECT * FROM advance."Users" 
         WHERE "UserID" = $1;
     `;
 
     const sqlGetRatings = `
-        SELECT * FROM advance."Ratings" 
+        SELECT * FROM advance."ratings" 
         WHERE rated_user_id = $1;
     `;
 
     try {
-        // Check if the user exists in the database
+        
         const userResult = await pool.query(sqlCheckUser, [ratedUserId]);
 
         if (userResult.rows.length === 0) {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Get ratings for the existing user
         const ratingsResult = await pool.query(sqlGetRatings, [ratedUserId]);
         res.status(200).json(ratingsResult.rows);
         
@@ -99,24 +167,20 @@ exports.getRatingsByUserId = async (req, res) => {
     }
 };
 
-// Update an existing rating
-// Update an existing rating
+
 exports.updateRating = async (req, res) => {
     const { rating } = req.body;
-    const raterId = req.user.id; // Get the rater ID from the authenticated user
-    const ratedUserId = req.params.userId; // The user being rated
+    const raterId = req.user.id; 
+    const ratedUserId = req.params.userId; 
 
-    // Check if the rating field is provided
     if (rating === undefined) {
         return res.status(400).json({ message: "Rating field is required." });
     }
 
-    // Validate the rating value
     if (rating < 1 || rating > 5) {
         return res.status(400).json({ message: "Rating must be between 1 and 5." });
     }
 
-    // Validate the user ID format
     if (isNaN(ratedUserId) || !Number.isInteger(Number(ratedUserId))) {
         return res.status(400).json({ message: "Invalid userId format." });
     }
@@ -129,7 +193,6 @@ exports.updateRating = async (req, res) => {
     `;
 
     try {
-        // Check if the user is authorized to update the rating
         const checkAuth = await pool.query(`
             SELECT * FROM advance.Ratings 
             WHERE rater_id = $1 AND rated_user_id = $2;
@@ -145,6 +208,7 @@ exports.updateRating = async (req, res) => {
             return res.status(404).json({ message: 'Rating not found.' });
         }
 
+        await updateUserRating(ratedUserId, rating);
         res.status(200).json({ message: 'Rating updated successfully!', result: updateResult.rows[0] });
     } catch (err) {
         console.error('Error updating rating:', err);
@@ -153,10 +217,9 @@ exports.updateRating = async (req, res) => {
 };
 
 
-// Delete a rating
 exports.deleteRating = async (req, res) => {
-    const raterId = req.user.id; // Get the rater ID from the authenticated user
-    const ratedUserId = req.params.userId; // The user being rated
+    const raterId = req.user.id; 
+    const ratedUserId = req.params.userId; 
 
     const sqlDelete = `
         DELETE FROM advance.Ratings 

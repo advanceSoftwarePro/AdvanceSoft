@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // Adjust the path as necessary
+const sequelize = require('../config/database'); 
 
 const Review = sequelize.define('Review', {
     id: {
@@ -11,16 +11,16 @@ const Review = sequelize.define('Review', {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Items', // Reference the Items table
-            key: 'ItemID', // Foreign key to ItemID in Items table
+            model: 'Items', 
+            key: 'ItemID', 
         },
     },
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users', // Reference the Users table
-            key: 'UserID', // Foreign key to UserID in Users table
+            model: 'Users', 
+            key: 'UserID', 
         },
     },
     review: {
@@ -41,11 +41,11 @@ const Review = sequelize.define('Review', {
     },
 }, {
     timestamps: false,
-    schema: 'advance', // Specifies the schema to be used
+    schema: 'advance', 
     tableName: 'Reviews',
     indexes: [
         {
-            unique: true, // Ensures user can only review each item once
+            unique: true, 
             fields: ['item_id', 'user_id'],
         },
     ],

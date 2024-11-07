@@ -13,7 +13,7 @@ exports.getStatistics = async (req, res) => {
         (SELECT COUNT(*) FROM "advance"."Rentals" WHERE "Status" = 'Completed') AS "completedRentals";
     `, { type: QueryTypes.SELECT });
 
-    res.status(200).json(result[0]); // result[0] since it's a single-row result
+    res.status(200).json(result[0]); 
   } catch (error) {
     console.error('Error fetching statistics:', error);
     res.status(500).json({ error: 'Error fetching statistics', details: error.message });

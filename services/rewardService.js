@@ -1,4 +1,3 @@
-// rewardService.js
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const { sendEmail } = require('../utils/emailService');
@@ -7,10 +6,8 @@ exports.identifyAndRewardBestUsers = async () => {
   try {
     console.log('Identifying best owner and renter...');
 
-    // Debugging logs
-    console.log('Running query for best owner...');
 
-    // Raw SQL query for best owner
+    console.log('Running query for best owner...');
     const [bestOwner] = await sequelize.query(
       `
       SELECT u."UserID", u."FullName", u."Email", COUNT(r."RentalID") AS "CompletedRentals"
@@ -26,11 +23,8 @@ LIMIT 1;
     );
 
     console.log('Best owner result:', bestOwner);
-
-    // Debugging logs
     console.log('Running query for best renter...');
 
-    // Raw SQL query for best renter
     const [bestRenter] = await sequelize.query(
       `
       SELECT u."UserID", u."FullName", u."Email", COUNT(r."RentalID") AS "CompletedRentals"
@@ -46,7 +40,6 @@ LIMIT 1;
 
     console.log('Best renter result:', bestRenter);
 
-    // Send reward notifications if best owner and renter are found
     if (bestOwner) {
       await sendRewardNotification(bestOwner, 'Top Owner');
     }
@@ -59,7 +52,6 @@ LIMIT 1;
   }
 };
 
-// Helper function to send reward notifications
 async function sendRewardNotification(user, title) {
   const subject = `Congratulations! You are our ${title}!`;
   const textContent = `Hello ${user.FullName},\n\nCongratulations! You've been selected as the ${title} on our platform. Enjoy your exclusive reward!`;

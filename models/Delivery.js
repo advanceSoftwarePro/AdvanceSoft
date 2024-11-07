@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const Rental = require('./Rental'); // Adjust the path as necessary
-const DeliveryDriver = require('./DeliveryDriver'); // Adjust the path as necessary
+const Rental = require('./Rental'); 
+const DeliveryDriver = require('./DeliveryDriver'); 
 
 const Delivery = sequelize.define('Delivery', {
   DeliveryID: {
@@ -14,7 +14,7 @@ const Delivery = sequelize.define('Delivery', {
     allowNull: false,
     references: {
       model: Rental,
-      key: 'RentalID', // Assuming you have a RentalID in your Rental model
+      key: 'RentalID', 
     },
   },
   DriverID: {
@@ -22,7 +22,7 @@ const Delivery = sequelize.define('Delivery', {
     allowNull: false,
     references: {
       model: DeliveryDriver,
-      key: 'DriverID', // Assuming you have a DriverID in your DeliveryDriver model
+      key: 'DriverID', 
     },
   },
   PickupLocation: {
@@ -40,10 +40,10 @@ const Delivery = sequelize.define('Delivery', {
   DeliveryStatus: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 'Pending', // Default status
+    defaultValue: 'Pending', 
   },
   currentLocation: {
-    type: DataTypes.STRING, // Or DataTypes.JSON if you used JSON format
+    type: DataTypes.STRING, 
     allowNull: true,
   },
   
@@ -53,7 +53,6 @@ const Delivery = sequelize.define('Delivery', {
   tableName: 'Deliveries',
 });
 
-// Define associations
 Delivery.associate = (models) => {
   
   Delivery.belongsTo(models.Rental, {

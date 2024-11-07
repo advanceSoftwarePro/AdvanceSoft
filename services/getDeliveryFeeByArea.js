@@ -1,13 +1,11 @@
 const axios = require('axios');
-
-// Geocode an address to get latitude and longitude
 const geocodeAddress = async (address) => {
-  const apiKey = 'VI4bFgW3DAiW6Cr4L2ezNBY3KHa3dTZqvcMlbwwygTA'; // Replace with your HERE API key
+  const apiKey = 'VI4bFgW3DAiW6Cr4L2ezNBY3KHa3dTZqvcMlbwwygTA'; 
   const url = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(address)}&apiKey=${apiKey}`;
   
   try {
     const response = await axios.get(url);
-    console.log('Geocode API Response:', response.data); // Debug: Log the geocoding response data
+    console.log('Geocode API Response:', response.data); 
     
     if (response.data && Array.isArray(response.data.items) && response.data.items.length > 0) {
       const location = response.data.items[0].position;
@@ -23,22 +21,21 @@ const geocodeAddress = async (address) => {
 };
 
 const getRoute = async (pickupCoords, deliveryCoords) => {
-  const apiKey = 'uQ2yyC1V-Y3Zchr7DF0GXx_uxaBStKbvnF2ojdDNZ6c'; // Replace with your HERE API key
+  const apiKey = 'uQ2yyC1V-Y3Zchr7DF0GXx_uxaBStKbvnF2ojdDNZ6c'; 
   const url = `https://router.hereapi.com/v8/routes?transportMode=car&origin=${pickupCoords.lat},${pickupCoords.lng}&destination=${deliveryCoords.lat},${deliveryCoords.lng}&return=summary&apikey=${apiKey}`;
 
   try {
-      const response = await axios.get(url); // Make the API request to HERE Routing API
+      const response = await axios.get(url); 
       if (response.data.routes && response.data.routes.length > 0) {
-          // Check if any routes were returned
-          const routeSummary = response.data.routes[0].sections[0].summary; // Return the summary of the first route section
+          const routeSummary = response.data.routes[0].sections[0].summary; 
           console.log('Route Summary:', routeSummary);
-          return routeSummary; // Return the route summary for further processing
+          return routeSummary; 
       }
       console.error('No routes found for these coordinates:', pickupCoords, deliveryCoords);
-      return null; // Return null if no valid route found
+      return null; 
   } catch (error) {
-      console.error('Error fetching route:', error.response ? error.response.data : error.message); // Improved error logging
-      return null; // Return null in case of an error
+      console.error('Error fetching route:', error.response ? error.response.data : error.message); 
+      return null; 
   }
 };
 

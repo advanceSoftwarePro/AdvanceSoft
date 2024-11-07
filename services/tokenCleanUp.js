@@ -1,5 +1,3 @@
-
-// services/tokenCleanUp.js
 const { Op } = require('sequelize');
 const TokenBlacklist = require('../models/tokenBlacklist');
 
@@ -19,13 +17,12 @@ const cleanExpiredTokens = async () => {
   }
 };
 
-// Export the cleanup function
 module.exports = {
   cleanExpiredTokens,
 };
 
-// Optionally: Run this cleanup function once a day
-setInterval(cleanExpiredTokens, 24 * 60 * 60 * 1000); // Clean up once every 24 hours
+
+setInterval(cleanExpiredTokens, 24 * 60 * 60 * 1000); 
 
 
 

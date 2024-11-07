@@ -1,6 +1,4 @@
-// controllers/ChartController.js
-
-const User = require('../models/User');
+const User = require('../models/user');
 const Rental = require('../models/Rental');
 
 exports.getChartData = async (req, res) => {

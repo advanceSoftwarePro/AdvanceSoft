@@ -4,7 +4,6 @@ const { Op } = require('sequelize');
 const path = require('path');
 
 exports.createItem = async (req, res) => {
-    // Check if the user is a Renter
     if (req.user.role === 'Renter') {
       return res.status(403).json({ message: 'Renters cannot create items' });
     }
@@ -20,7 +19,7 @@ exports.createItem = async (req, res) => {
         AvailabilityStatus,
         DeliveryOptions,
         CategoryID,
-        UserID: req.user.id  // Use 'id', which is set in the middleware
+        UserID: req.user.id 
       });
   
       return res.status(201).json({ message: 'Item created successfully', item: newItem });
@@ -29,20 +28,16 @@ exports.createItem = async (req, res) => {
     }
   };
   
- 
-
-
-// Get all items added by the current user
 exports.getAllItems = async (req, res) => {
     try {
-      // Filter items by the currently authenticated user's ID
+      
       const items = await Item.findAll({
         where: {
-          UserID: req.user.id,  // Use the UserID from the JWT token
+          UserID: req.user.id, 
         },
       });
   
-      // Return the filtered items
+      
       return res.status(200).json({ items });
     } catch (error) {
       return res.status(500).json({ message: 'Server error', error });
@@ -58,7 +53,7 @@ exports.updateItem = async (req, res) => {
     const { Title, Description, DailyPrice, Condition, AvailabilityStatus, DeliveryOptions } = req.body;
   
     try {
-      const item = await Item.findOne({ where: { ItemID: id, UserID: req.user.id } });  // Use 'id'
+      const item = await Item.findOne({ where: { ItemID: id, UserID: req.user.id } }); 
   
       if (!item) {
         return res.status(404).json({ message: 'Item not found or not owned by you' });
@@ -87,7 +82,7 @@ exports.updateItem = async (req, res) => {
     const { id } = req.params;
   
     try {
-      const item = await Item.findOne({ where: { ItemID: id, UserID: req.user.id } });  // Use 'id'
+      const item = await Item.findOne({ where: { ItemID: id, UserID: req.user.id } }); 
   
       if (!item) {
         return res.status(404).json({ message: 'Item not found or not owned by you' });
@@ -103,15 +98,13 @@ exports.updateItem = async (req, res) => {
   exports.getFilteredItems = async (req, res) => {
     try {
       const { category, condition, maxPrice ,maxSecurityDeposit} = req.query;
-  
-      // Initialize the filter object
       const filter = { AvailabilityStatus: 'Available' }; 
   
       if (category) {
         const categoryRecord = await Category.findOne({ where: { categoryName: category } }); 
   
         if (categoryRecord) {
-          filter.CategoryID = categoryRecord.CategoryID; // Use the found CategoryID
+          filter.CategoryID = categoryRecord.CategoryID; 
         } else {
           return res.status(404).json({ message: 'Category not found' });
         }
@@ -127,7 +120,7 @@ exports.updateItem = async (req, res) => {
   
      
       if (maxPrice) {
-        filter.DailyPrice = { [Op.lte]: maxPrice }; // Op.lte for "less than or equal to"
+        filter.DailyPrice = { [Op.lte]: maxPrice }; 
       }
   
       const items = await Item.findAll({
@@ -145,8 +138,6 @@ exports.updateItem = async (req, res) => {
 exports.getItemDetails = async (req, res) => {
   try {
     const { itemId } = req.params;
-
-    // Find the item by ItemID
     const item = await Item.findOne({
       where: { ItemID: itemId }
      
@@ -155,8 +146,6 @@ exports.getItemDetails = async (req, res) => {
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
-
-    // Respond with item details
     return res.status(200).json({
       Title: item.Title,
       Description: item.Description,
@@ -173,7 +162,7 @@ exports.getItemDetails = async (req, res) => {
 };
 
 exports.searchItems = async (req, res) => {
-  const { Name } = req.query;  // Extract the query parameter from the request
+  const { Name } = req.query;  
 
   if (!Name) {
       return res.status(400).json({ message: 'Query parameter is required.' });
@@ -183,10 +172,10 @@ exports.searchItems = async (req, res) => {
       const items = await Item.findAll({
           where: {
               Title: {
-                  [Op.iLike]: `%${Name}%`,  // Use iLIKE for case-insensitive matching
+                  [Op.iLike]: `%${Name}%`,  
               },
           },
-          attributes: ['Title', 'Description', 'DailyPrice', 'Condition', 'AvailabilityStatus'],  // Customize the attributes you want to return
+          attributes: ['Title', 'Description', 'DailyPrice', 'Condition', 'AvailabilityStatus'],  
       });
 
       if (items.length === 0) {

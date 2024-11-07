@@ -1,7 +1,5 @@
-const User = require('../models/user');  // Adjust the path if needed
-const Rental = require('../models/Rental');  // Adjust the path if needed
-
-// Function to get statistics data
+const User = require('../models/user');  
+const Rental = require('../models/Rental');  
 exports.getStatistics = async () => {
   try {
     const userCount = await User.count();

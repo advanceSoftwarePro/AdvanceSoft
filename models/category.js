@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const Category = sequelize.define(
-  'Category',  // Model name
+  'Category',  
   {  
     "CategoryID": {
       type: DataTypes.INTEGER,
@@ -19,19 +19,19 @@ const Category = sequelize.define(
       allowNull: true,
       references: {
         model: {
-          tableName: '"Categories"',  // Reference the same table with correct case
-          schema: 'advance',  // Ensure it uses the correct schema
+          tableName: '"Categories"',  
+          schema: 'advance',  
         },
-        key: '"CategoryID"',    // Foreign key reference to the CategoryID field
+        key: '"CategoryID"',    
       },
-      onDelete: 'CASCADE',  // Optional: if a parent category is deleted, delete child categories
+      onDelete: 'CASCADE',  
       onUpdate: 'CASCADE',
     },
   },
   {
-    tableName: '"Categories"',  // Use double quotes to preserve the table name case
-    schema: 'advance',  // Schema where this table resides
-    timestamps: false,  // Disable timestamps (no createdAt or updatedAt)
+    tableName: '"Categories"',  
+    schema: 'advance',  
+    timestamps: false,  
   }
 );
 

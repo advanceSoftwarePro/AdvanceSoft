@@ -4,10 +4,10 @@ const Delivery = require('../models/Delivery');
 const DeliveryDriver =require('../models/DeliveryDriver');
 const Distance =require('../services/getDeliveryFeeByArea');
 const { sendEmail } = require('../utils/emailService'); 
-const User =require('../models/User');
+const User =require('../models/user');
 
 const endpointSecret = 'whsec_KPIBlGQlE48XnpSdkPHKRIdu2p2GVMO7'; 
-const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI'); // Replace with your Stripe secret key
+const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI');
 
 const validateRequestData = (reqBody) => {
   const { ItemID, StartDate, EndDate, DeliveryOption, paymentMethod, amount } = reqBody;
@@ -25,7 +25,6 @@ const validateRequestData = (reqBody) => {
   }
 };
 
-// Utility to validate dates and calculate rental period
 const validateDatesAndGetRentalPeriod = (StartDate, EndDate) => {
   const startDateObj = new Date(StartDate);
   const endDateObj = new Date(EndDate);
@@ -36,7 +35,7 @@ const validateDatesAndGetRentalPeriod = (StartDate, EndDate) => {
   return Math.round(Math.abs((endDateObj - startDateObj) / oneDay));
 };
 
-// Function to fetch item and owner information
+
 const fetchItemAndOwner = async (ItemID) => {
   const item = await Item.findOne({ where: { ItemID } });
   if (!item) throw new Error('Item not found');
@@ -48,7 +47,6 @@ const fetchItemAndOwner = async (ItemID) => {
   return { item, owner };
 };
 
-// Calculate delivery fee based on location and distance
 const calculateDeliveryFee = async (DeliveryOption, ownerAddress, DeliveryAddress) => {
   if (DeliveryOption !== 'Delivery') return 0;
 
@@ -63,17 +61,16 @@ const calculateDeliveryFee = async (DeliveryOption, ownerAddress, DeliveryAddres
   if (!route || route.error) throw new Error('Delivery not available for this area');
 
   const distanceInKilometers = route.length / 1000;
-  return Math.ceil(distanceInKilometers * 0.1); // $0.10 per kilometer
+  return Math.ceil(distanceInKilometers * 0.1); 
 };
 
-// Process payment using Stripe
 const processPayment = async (paymentMethod, totalPrice) => {
   if (paymentMethod.toLowerCase() === 'cash') {
     return { paymentIntentId: null, paymentStatus: 'PaymentPending' };
   }
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: totalPrice * 100, // Amount in cents
+    amount: totalPrice * 100, 
     currency: 'usd',
     payment_method: 'pm_card_visa',          
     payment_method_types: ['card'], 
@@ -87,7 +84,7 @@ const processPayment = async (paymentMethod, totalPrice) => {
   throw new Error('Payment not successful');
 };
 
-// Create rental and notify the owner by email
+
 const createRentalAndNotifyOwner = async (req,renter, item, owner, totalPrice, discountPrice, deliveryFee, rentalPeriod, paymentDetails) => {
   const { StartDate, EndDate, DeliveryOption, DeliveryAddress, paymentMethod } = req.body;
   const rental = await Rental.create({
@@ -131,30 +128,30 @@ const { Op } = require('sequelize');
 
 async function getApplicablePromotion(rentalStartDate, basePrice) {
   try {
-      // Find active promotions where rentalStartDate is within the promotion date range
+      
       const promotion = await Promotion.findOne({
           where: {
               isActive: true,
-              startDate: { [Op.lte]: rentalStartDate }, // Promotion start date is before or on the rental start date
-              endDate: { [Op.gte]: rentalStartDate }, // Promotion end date is after or on the rental start date
+              startDate: { [Op.lte]: rentalStartDate },
+              endDate: { [Op.gte]: rentalStartDate }, 
           },
       });
 
       if (!promotion) {
         console.log("jjj");
-          return basePrice; // No promotion found, return the original base price
+          return basePrice; 
       }
 
-      // Calculate the discount amount
+      
       const discountAmount = (promotion.discountPercentage / 100) * basePrice;
-      const discountedPrice = basePrice - discountAmount; // Calculate the total after applying the discount
+      const discountedPrice = basePrice - discountAmount; 
       
       console.log(`Promotion found: ${promotion.discountPercentage}% off`);
       console.log(`Original Price: ${basePrice}`);
       console.log(`Discount Amount: ${discountAmount}`);
       console.log(`Discounted Price: ${discountedPrice}`);
       
-      return discountedPrice; // Return the total price after discount
+      return discountedPrice; 
   } catch (error) {
       console.error('Error fetching applicable promotion:', error);
       throw error;
@@ -166,41 +163,26 @@ async function getApplicablePromotion(rentalStartDate, basePrice) {
 
 exports.createRental = async (req, res) => {
   try {
-    // Validate the request data
     validateRequestData(req.body);
-
-    // Check if the user has the right role to create a rental
     if (req.user.role !== 'Renter') {
       return res.status(403).json({ message: 'Only Renters can rent items' });
     }
 
-    // Validate rental dates and get the rental period
     const rentalPeriod = validateDatesAndGetRentalPeriod(req.body.StartDate, req.body.EndDate);
-    
-    // Fetch the item and the owner's details
     const { item, owner } = await fetchItemAndOwner(req.body.ItemID);
-    
-    // Calculate the delivery fee based on the delivery option and addresses
     const deliveryFee = await calculateDeliveryFee(req.body.DeliveryOption, owner.Address, req.body.DeliveryAddress);
-    
-    // Calculate the total price based on daily price, rental period, and delivery fee
     let totalPrice = item.DailyPrice * rentalPeriod + deliveryFee;
 
     console.log("before discount: " + totalPrice);
     
-    console.log("Request Body:", req.body); // Log request data to see input
+    console.log("Request Body:", req.body); 
     console.log("Fetching applicable promotion for rental start date:", req.body.StartDate);
 
      let discountPrice = await getApplicablePromotion(req.body.StartDate, totalPrice);
      console.log("Total Price after promotion function:", totalPrice);
-
-
     console.log("after discount: " + discountPrice);
 
-    // Parse the provided amount from the request body
     const parsedAmount = req.body.amount != null ? parseFloat(req.body.amount) : totalPrice;
-
-    // Check if the provided amount matches the total price, except for cash payments
     if (parsedAmount !== discountPrice && req.body.paymentMethod.toLowerCase() !== 'cash') {
       return res.status(400).json({ 
         message: 'The provided amount does not match the total price.', 
@@ -208,18 +190,12 @@ exports.createRental = async (req, res) => {
         providedAmount: req.body.amount 
       });
     }
-
-    // Process the payment
     const paymentDetails = await processPayment(req.body.paymentMethod, totalPrice);
     
     const renter = await User.findOne({
-      where: { UserID: req.user.id }, // Assuming req.user contains the logged-in user's ID
-      attributes: ['FullName', 'Email'] // Specify the attributes to fetch
+      where: { UserID: req.user.id }, 
+      attributes: ['FullName', 'Email'] 
     });
-    // Create the rental and notify the owner
-    const rental = await createRentalAndNotifyOwner(req, renter ,item, owner, totalPrice, discountPrice,deliveryFee, rentalPeriod, paymentDetails);
-
-    // Send success response
     res.status(201).json({ 
       message: 'Rental created successfully, owner has been notified', 
       rental 
@@ -251,12 +227,9 @@ const fetchRentalById = async (id) => {
 const createPaymentLinkAndNotifyRenter = async (rental) => {
   if (rental.paymentMethod === 'cash' && rental.paymentStatus !== 'Complete') {
     try {
-      // Fetch the Security Deposit item details
       const securityDepositItem = await getSecurityDepositItem(rental.ItemID);
       const depositAmount = securityDepositItem ? securityDepositItem.SecurityDeposit : 0;
       const depositAmountInteger = Math.floor(Number(depositAmount));
-
-      // Create the payment link
       const paymentLink = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -282,16 +255,13 @@ const createPaymentLinkAndNotifyRenter = async (rental) => {
 
       console.log('Payment Link Created:', paymentLink);
 
-      const sessionId = paymentLink.id; // This is the session ID created by Stripe
+      const sessionId = paymentLink.id; 
 console.log(sessionId);
       await Rental.update(
         { paymentIntentId: sessionId }, 
-        { where: { RentalID: rental.RentalID } } // Update the correct rental record
+        { where: { RentalID: rental.RentalID } } 
       );
       console.log('Full Payment Link Response:', JSON.stringify(paymentLink, null, 2));
-
-   
-      // Notify renter
       const renter = await getRenterById(rental.RenterID);
       const renterEmail = renter ? renter.Email : null;
   
@@ -304,7 +274,7 @@ console.log(sessionId);
       await sendEmail(
         renterEmail,
         'Deposit Payment Required',
-        'Your Renta Request Has been accepted Please complete the security deposit payment to proceed with your rental.', // Plain text version
+        'Your Renta Request Has been accepted Please complete the security deposit payment to proceed with your rental.', 
         `
         <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
           <p>Hello ${rental.renterName || 'Valued Customer'},</p>
@@ -365,20 +335,18 @@ const findAvailableDriver = async (deliveryCoords) => {
    
   let closestDriver = null;
   let closestDistance = Infinity;
-
-  // Loop through drivers to find the closest one
   for (const driver of drivers) {
     const driverCoords = await Distance.geocodeAddress(driver.Area);
 
     if (!driverCoords) {
       console.error(`Could not geocode address for driver: ${driver.Area}`);
-      continue; // Skip if geocoding fails
+      continue; 
     }
 
     const routeSummary = await Distance.getRoute(driverCoords, deliveryCoords);
 
     if (routeSummary && routeSummary.length > 0) {
-      const distance = routeSummary.length; // Assume length is in meters
+      const distance = routeSummary.length; 
       if (distance < closestDistance) {
         closestDistance = distance;
         closestDriver = driver;
@@ -427,13 +395,9 @@ exports.updateRentalStatus = async (req, res) => {
   const { status } = req.body;
 
   try {
-    // Authorization Check
+
     authorizeUser(req.user);
-
-    // Fetch and Validate Rental
     const rental = await fetchRentalById(id);
-
-    // Handle Payment Link Creation for Cash Payments
     if (status==='Approved' && rental.paymentMethod === 'cash'){
     const paymentLinkResponse = await createPaymentLinkAndNotifyRenter(rental);
     if (paymentLinkResponse) return res.status(200).json(paymentLinkResponse);
@@ -456,13 +420,12 @@ exports.updateRentalStatus = async (req, res) => {
       deliveryResponse = await handleDeliveryAssignment(rental, deliveryCoords, status);
     } 
     else {
-      // Update Status for non-delivery rentals
       await updateRentalStatus(rental, status);
     }
 
     const item = await Item.findOne({
-      where: { ItemID: rental.ItemID }, // Assuming `itemId` is the correct foreign key in rental
-      attributes: ['Title'] // Fetch only the Title attribute
+      where: { ItemID: rental.ItemID }, 
+      attributes: ['Title'] 
     });
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
@@ -473,7 +436,7 @@ exports.updateRentalStatus = async (req, res) => {
       `Your Rental Application Status for ${item.Title}`, 
       `Hello ${renter.FullName},\n\n` +
       `We would like to inform you about the status of your rental application for the item "${item.Title}".\n\n` +
-      `Status: ${status}\n\n` + // 'Approved' or 'Rejected'
+      `Status: ${status}\n\n` +
       (status === 'Approved' ? 
           `Congratulations! Your application has been approved. You can now proceed with the next steps.\n\n` : 
           `We regret to inform you that your application has been rejected. Thank you for your interest, and we encourage you to apply again in the future.\n\n`) +
@@ -496,7 +459,7 @@ exports.updateRentalStatus = async (req, res) => {
 
 
 exports.getAllRentals = async (req, res) => {
-  const { status } = req.query; // Get status from query parameter
+  const { status } = req.query; 
 
   try {
     let rentals;
@@ -506,13 +469,12 @@ exports.getAllRentals = async (req, res) => {
     }
 
     if (req.user.role === 'Renter') {
-      // Fetch rentals for the current renter filtered by status
+      
       rentals = await Rental.findAll({
         where: { RenterID: req.user.id, Status: status },
         include: [{ model: Item, as: 'Item' }],
       });
     } else if (req.user.role === 'Owner') {
-      // Fetch rentals for the current owner's items filtered by status
       rentals = await Rental.findAll({
         where: { Status: status },
         include: [{ model: Item, as: 'Item', where: { UserID: req.user.id } }],
@@ -525,35 +487,31 @@ exports.getAllRentals = async (req, res) => {
 
     return res.status(200).json({ rentals });
   } catch (error) {
-    console.error('Error fetching rentals:', error); // Log the actual error
+    console.error('Error fetching rentals:', error); 
     return res.status(500).json({ message: 'Server error', error: error.message || 'An unknown error occurred' });
   }
 };
 
 
-// Refund Deposit Endpoint
+
 exports.refundDeposit = async (req, res) => {
   const { rentalId } = req.params;
 
   try {
-    // Retrieve the rental record
     const rental = await Rental.findOne({ where: { RentalID: rentalId } });
     if (!rental) {
       return res.status(404).json({ message: 'Rental not found' });
     }
 
-    // Retrieve the associated item to verify ownership
     const item = await Item.findOne({ where: { ItemID: rental.ItemID } });
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }
 
-    // Ensure the logged-in user is the owner
     if (req.user.id !== item.UserID) {
       return res.status(403).json({ message: 'Only the owner can refund the deposit' });
     }
 
-    // Ensure there is a deposit payment to refund
     if (!rental.paymentIntentId) {
       return res.status(400).json({ message: 'No deposit payment found for this rental' });
     }
@@ -575,10 +533,10 @@ exports.refundDeposit = async (req, res) => {
       amount: depositAmountCents , 
     });
   }
-    // Update the rental status or mark deposit as refunded
+
     await Rental.update(
       { depositRefunded: true },
-      { where: { RentalID: rentalId } } // Assuming RentalID is the primary key
+      { where: { RentalID: rentalId } } 
     );
 
     return res.status(200).json({ message: 'Deposit refunded successfully', refund });
@@ -594,13 +552,13 @@ exports.assignDeliveryAfterPayment = async (rentalId) => {
   const rental = await Rental.findOne({ where: { RentalID: rentalId } });
 
   if (!rental) throw new Error(`Rental with ID ${rentalId} not found`);
-  if (rental.DeliveryOption !== 'Delivery') return null; // Skip if delivery not needed
+  if (rental.DeliveryOption !== 'Delivery') return null; 
 
   const deliveryCoords = await Distance.geocodeAddress(rental.DeliveryAddress);
   if (!deliveryCoords) throw new Error('Invalid delivery address for assignment');
 
-  // Call the delivery assignment function you already have
-  return await handleDeliveryAssignment(rental, deliveryCoords, 'Pending'); // Set status as needed
+
+  return await handleDeliveryAssignment(rental, deliveryCoords, 'Pending'); 
 };
 
 exports.checkPaymentStatusAndUpdateRental = async (req, res) => {
@@ -614,7 +572,7 @@ exports.checkPaymentStatusAndUpdateRental = async (req, res) => {
           return res.status(404).json({ error: `Rental with ID ${rentalId} not found` });
       }
 
-      console.log('Rental object:', rental); // Log the rental object
+      console.log('Rental object:', rental); 
 
       if (!rental.paymentIntentId) {
           console.error('No payment intent found for this rental');
@@ -622,8 +580,7 @@ exports.checkPaymentStatusAndUpdateRental = async (req, res) => {
       }
 
       const paymentIntent = await stripe.checkout.sessions.retrieve(rental.paymentIntentId);
-      
-      // Check if paymentIntent is defined
+    
       if (!paymentIntent) {
           console.error(`No payment intent found for ID: ${rental.paymentIntentId}`);
           return res.status(404).json({ error: 'Payment intent not found' });
@@ -633,13 +590,10 @@ exports.checkPaymentStatusAndUpdateRental = async (req, res) => {
       console.log(`Payment status for rental ID ${rentalId}: ${paymentStatus}`);
 
       if (paymentStatus === 'complete') {
-          // Update the rental status to a valid value
-          await updateRentalStatus(rental, 'Approved'); // Set a valid status
+          await updateRentalStatus(rental, 'Approved');
 
           if (rental.DeliveryOption === 'Delivery') {
               const deliveryCoords = await Distance.geocodeAddress(rental.DeliveryAddress);
-              
-              // Check if deliveryCoords is defined
               if (!deliveryCoords) {
                   console.error('Invalid delivery address for assignment');
                   return res.status(400).json({ error: 'Invalid delivery address for assignment' });
@@ -673,8 +627,8 @@ exports.getCompletedRentals = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admins only.' });
   }
     const rentals = await Rental.findAll({
-      where: { Status: 'Completed' }, // Ensure the case matches your model's schema
-      include: [{ model: Item, as: 'Item' }], // Include related Item details
+      where: { Status: 'Completed' }, 
+      include: [{ model: Item, as: 'Item' }], 
     });
 
     if (!rentals || rentals.length === 0) {

@@ -1,7 +1,7 @@
 
 const User = require('../models/user');
 const authService = require('../services/authService');
-const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI'); // Replace with your Stripe secret key
+const stripe = require('stripe')('sk_test_51Q67wNP2XFAQ7ru8gaqYklalVKL8ZlDYVpZYc0C2RVMESwBOxrP1RE1Z8NNvp5OYV4UnKmgouaQfASf5gDWfuX2c009N4rwRHI'); 
 const { validateRegister } = require('../utils/validators');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
@@ -51,27 +51,24 @@ exports.register = async (req, res) => {
 
 
 exports.verifyEmail = async (req, res) => {
-  const { token } = req.params; // Assuming you pass the token in the URL
+  const { token } = req.params; 
 
   try {
-    const email = await authService.verifyToken(token); // Verify the token and retrieve the email
+    const email = await authService.verifyToken(token); 
 
-    // Check if the email is already registered (to avoid duplicate verification)
     const existingUser = await User.findOne({ where: { Email: email } });
     if (existingUser) {
       return res.status(400).json({ message: 'User already registered or verified' });
     }
 
-    // If the user is not already registered, store their data in the database
     const userData = {
-      FullName: req.body.fullName, // Get fullName from the request body
+      FullName: req.body.fullName, 
       Email: email,
-      Password: await authService.hashPassword(req.body.password), // Hash the password from request body
-      Role: req.body.role, // Get role from request body
-      VerificationStatus: 'Verified', // Mark as verified
+      Password: await authService.hashPassword(req.body.password), 
+      Role: req.body.role, 
+      VerificationStatus: 'Verified', 
     };
 
-    // Create the user in the database after verification
     const user = await User.create(userData);
 
     return res.status(200).json({ message: 'Email verified and user registered successfully.' });
@@ -98,23 +95,19 @@ exports.registerOwner = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: 'Email already exists' });
     }
-    // Hash the password (optional, you can store it later)
+
     const hashedPassword = await authService.hashPassword(password);
 
-    // Generate a verification token
     const verificationToken = authService.generateVerificationToken(email);
 
-    // Generate payment intent (fees for using the app as an owner)
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 1000, // Amount in cents ($10.00)
+      amount: 1000, 
       currency: 'usd',
       payment_method_types: ['card'],
     });
 
-    // Send the verification email to the owner
+    
     await authService.sendVerificationEmail(email, verificationToken);
-
-    // Return the payment intent secret and verification token in the response
     return res.status(200).json({
       message: 'Owner registration started. Please verify your email and complete the payment.',
       paymentIntentSecret: paymentIntent.client_secret,
@@ -132,10 +125,7 @@ exports.verifyOwnerEmail = async (req, res) => {
   const { token } = req.params;
 
   try {
-    // Verify the token and get the email associated with it
     const email = await authService.verifyToken(token);
-
-    // Send a response asking for payment to complete the registration
     return res.status(200).json({
       message: 'Email verified. Please complete the payment to finish your registration.',
       email: email,
@@ -151,14 +141,12 @@ exports.confirmOwnerPayment = async (req, res) => {
   const { paymentIntentId, email, fullName, password } = req.body;
 
   try {
-    // Confirm the payment intent with Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== 'succeeded') {
       return res.status(400).json({ message: 'Payment not completed. Please try again.' });
     }
 
-    // Now that the payment is successful, register the user in the database
     const hashedPassword = await authService.hashPassword(password);
 
     const userData = {
@@ -169,8 +157,6 @@ exports.confirmOwnerPayment = async (req, res) => {
       VerificationStatus: 'Verified',
       paymentIntent:paymentIntentId
     };
-
-    // Save the user in the database
     const newUser = await User.create(userData);
 
     return res.status(201).json({ message: 'Registration complete. Welcome to the platform!' });
